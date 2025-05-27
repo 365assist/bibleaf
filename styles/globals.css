@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 210 100% 35%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 43 80% 60%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 43 80% 60%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 210 100% 35%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 43 80% 60%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 43 80% 60%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: url('/background-image.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+  }
+  
+  /* Christian-themed styling */
+  .verse {
+    @apply relative pl-6 py-2;
+    border-left: 3px solid hsl(var(--secondary));
+  }
+  
+  .verse::before {
+    content: "✝";
+    @apply absolute left-1 top-2 text-secondary text-sm opacity-70;
+  }
+  
+  .feature-icon {
+    @apply relative;
+  }
+  
+  .feature-icon::after {
+    content: "";
+    @apply absolute inset-0 bg-secondary/10 rounded-full -z-10 scale-[1.35] opacity-50;
+  }
+  
+  /* Prayer-inspired card styling */
+  .prayer-card {
+    @apply relative overflow-hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .prayer-card::before {
+    content: "";
+    @apply absolute top-0 left-0 w-full h-1 bg-secondary;
+  }
+  
+  /* Scripture-inspired button */
+  .scripture-button {
+    @apply relative overflow-hidden transition-all duration-300;
+  }
+  
+  .scripture-button::after {
+    content: "";
+    @apply absolute inset-0 bg-primary/10 scale-x-0 origin-left transition-transform duration-300;
+  }
+  
+  .scripture-button:hover::after {
+    @apply scale-x-100;
+  }
+}
