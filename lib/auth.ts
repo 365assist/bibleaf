@@ -53,36 +53,15 @@ export class AuthService {
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Demo users for testing
-      const demoUsers = [
+      // Developer accounts for testing and development
+      const developerUsers = [
         {
-          email: "demo@bibleaf.com",
-          password: "demo123",
+          email: "dev@bibleaf.com",
+          password: "dev2024!",
           user: {
-            id: "demo-user-123",
-            email: "demo@bibleaf.com",
-            name: "Demo User",
-            createdAt: new Date().toISOString(),
-            subscription: {
-              tier: "free" as const,
-              status: "active" as const,
-              searchesUsedToday: 0,
-              lastSearchReset: new Date().toISOString(),
-            },
-            preferences: {
-              theme: "system" as const,
-              notifications: true,
-              verseCategories: ["hope", "faith", "love"],
-            },
-          },
-        },
-        {
-          email: "premium@bibleaf.com",
-          password: "premium123",
-          user: {
-            id: "premium-user-456",
-            email: "premium@bibleaf.com",
-            name: "Premium User",
+            id: "dev-user-001",
+            email: "dev@bibleaf.com",
+            name: "Developer Account",
             createdAt: new Date().toISOString(),
             subscription: {
               tier: "premium" as const,
@@ -93,28 +72,87 @@ export class AuthService {
             preferences: {
               theme: "system" as const,
               notifications: true,
-              verseCategories: ["wisdom", "guidance", "peace"],
+              verseCategories: ["development", "testing", "faith"],
+            },
+          },
+        },
+        {
+          email: "admin@bibleaf.com",
+          password: "admin2024!",
+          user: {
+            id: "admin-user-001",
+            email: "admin@bibleaf.com",
+            name: "Admin Account",
+            createdAt: new Date().toISOString(),
+            subscription: {
+              tier: "premium" as const,
+              status: "active" as const,
+              searchesUsedToday: 0,
+              lastSearchReset: new Date().toISOString(),
+            },
+            preferences: {
+              theme: "system" as const,
+              notifications: true,
+              verseCategories: ["administration", "management", "wisdom"],
+            },
+          },
+        },
+        {
+          email: "test@bibleaf.com",
+          password: "test2024!",
+          user: {
+            id: "test-user-001",
+            email: "test@bibleaf.com",
+            name: "Test Account",
+            createdAt: new Date().toISOString(),
+            subscription: {
+              tier: "free" as const,
+              status: "active" as const,
+              searchesUsedToday: 0,
+              lastSearchReset: new Date().toISOString(),
+            },
+            preferences: {
+              theme: "system" as const,
+              notifications: true,
+              verseCategories: ["testing", "quality-assurance"],
             },
           },
         },
       ]
 
-      const demoUser = demoUsers.find((u) => u.email === email && u.password === password)
+      const developerUser = developerUsers.find((u) => u.email === email && u.password === password)
 
-      if (!demoUser) {
+      if (!developerUser) {
         return { success: false, error: "Invalid email or password" }
       }
 
       // Create session
       const session = {
-        userId: demoUser.user.id,
+        userId: developerUser.user.id,
         expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       }
 
-      localStorage.setItem(this.USER_KEY, JSON.stringify(demoUser.user))
+      localStorage.setItem(this.USER_KEY, JSON.stringify(developerUser.user))
       localStorage.setItem(this.SESSION_KEY, JSON.stringify(session))
 
-      return { success: true, user: demoUser.user }
+      // Try to initialize user data in blob storage for developer accounts
+      // But make it optional - don't block login if blob storage is not available
+      try {
+        // Check if BLOB_READ_WRITE_TOKEN is available before attempting to save
+        const { serverEnv } = await import("./env-server")
+        if (serverEnv.BLOB_READ_WRITE_TOKEN) {
+          const { saveUserData } = await import("./blob-storage")
+          await saveUserData(developerUser.user)
+          console.log("User data saved to blob storage")
+        } else {
+          console.log("Blob storage not configured - skipping user data initialization")
+        }
+      } catch (error) {
+        // Don't block login if blob storage fails
+        console.log("Note: User data initialization skipped (blob storage not available)")
+      }
+
+      return { success: true, user: developerUser.user }
     } catch (error) {
       console.error("Login error:", error)
       return { success: false, error: "Login failed. Please try again." }
@@ -130,9 +168,9 @@ export class AuthService {
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Check if user already exists (demo)
-      if (email === "demo@bibleaf.com" || email === "premium@bibleaf.com") {
-        return { success: false, error: "User already exists" }
+      // Check if user already exists (developer accounts)
+      if (email === "dev@bibleaf.com" || email === "admin@bibleaf.com" || email === "test@bibleaf.com") {
+        return { success: false, error: "This email is reserved. Please use a different email address." }
       }
 
       // Create new user
@@ -163,6 +201,22 @@ export class AuthService {
       localStorage.setItem(this.USER_KEY, JSON.stringify(newUser))
       localStorage.setItem(this.SESSION_KEY, JSON.stringify(session))
 
+      // Try to save user data to blob storage, but make it optional
+      try {
+        // Check if BLOB_READ_WRITE_TOKEN is available before attempting to save
+        const { serverEnv } = await import("./env-server")
+        if (serverEnv.BLOB_READ_WRITE_TOKEN) {
+          const { saveUserData } = await import("./blob-storage")
+          await saveUserData(newUser)
+          console.log("New user data saved to blob storage")
+        } else {
+          console.log("Blob storage not configured - skipping user data initialization")
+        }
+      } catch (error) {
+        // Don't block signup if blob storage fails
+        console.log("Note: User data initialization skipped (blob storage not available)")
+      }
+
       return { success: true, user: newUser }
     } catch (error) {
       console.error("Signup error:", error)
@@ -182,6 +236,20 @@ export class AuthService {
 
     const updatedUser = { ...currentUser, ...updates }
     localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser))
+
+    // Try to update user data in blob storage, but make it optional
+    try {
+      // We're in a client component, so we can't directly check serverEnv
+      // Instead, we'll try to update and catch any errors
+      import("./blob-storage").then(({ saveUserData }) => {
+        saveUserData(updatedUser).catch(() => {
+          console.log("Note: User data update skipped (blob storage not available)")
+        })
+      })
+    } catch (error) {
+      // Don't block the update if blob storage fails
+      console.log("Note: User data update skipped (blob storage not available)")
+    }
   }
 }
 
@@ -190,8 +258,8 @@ export const authOptions = {
   providers: [
     // Placeholder for future NextAuth.js integration
     {
-      id: "demo",
-      name: "Demo Provider",
+      id: "credentials",
+      name: "Credentials",
       type: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },

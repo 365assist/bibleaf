@@ -33,14 +33,17 @@ export const clientEnv = {
 const createServerOnlyProxy = () => {
   const handler = {
     get: (target: any, prop: string) => {
-      // For build-time only variables, never access them at runtime
+      // For build-time only variables, silently return empty string (no warnings)
       if (BUILD_TIME_ONLY_VARS.includes(prop)) {
-        return "" // Always return empty string, no warnings
+        return ""
       }
 
       // Only allow access on the server for other variables
       if (isClient) {
-        console.warn(`${prop} cannot be accessed on the client.`)
+        // Only warn for actual server variables, not build-time variables
+        if (!BUILD_TIME_ONLY_VARS.includes(prop)) {
+          console.warn(`${prop} cannot be accessed on the client.`)
+        }
         return ""
       }
 

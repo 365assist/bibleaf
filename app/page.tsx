@@ -2,174 +2,263 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useTheme } from "next-themes"
 import { AuthService } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Brain, Book, Heart, Zap, Users, Star } from "lucide-react"
 
 export default function Home() {
   const { theme, setTheme } = useTheme()
-  const [activeTab, setActiveTab] = useState("search")
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [guidanceInput, setGuidanceInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
 
   useEffect(() => {
     const user = AuthService.getCurrentUser()
     setIsLoggedIn(!!user)
   }, [])
 
-  // Demo search results for different queries
-  const getDemoSearchResults = (query: string) => {
-    const results = {
-      "overcoming fear": [
-        {
-          reference: "Isaiah 41:10",
-          text: "So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.",
-          relevance: 98,
-          context: "God's promise of presence and strength in times of fear",
-        },
-        {
-          reference: "Psalm 23:4",
-          text: "Even though I walk through the darkest valley, I will fear no evil, for you are with me; your rod and your staff, they comfort me.",
-          relevance: 95,
-          context: "Comfort and protection in difficult times",
-        },
-      ],
-      forgiveness: [
-        {
-          reference: "Ephesians 4:32",
-          text: "Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.",
-          relevance: 97,
-          context: "The call to forgive others as God has forgiven us",
-        },
-        {
-          reference: "Matthew 6:14-15",
-          text: "For if you forgive other people when they sin against you, your heavenly Father will also forgive you.",
-          relevance: 94,
-          context: "The importance of forgiveness in our relationship with God",
-        },
-      ],
-      strength: [
-        {
-          reference: "Philippians 4:13",
-          text: "I can do all this through him who gives me strength.",
-          relevance: 99,
-          context: "Strength and capability through Christ",
-        },
-        {
-          reference: "Isaiah 40:31",
-          text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.",
-          relevance: 96,
-          context: "Renewed strength through hope in God",
-        },
-      ],
-    }
+  const features = [
+    {
+      icon: <Brain className="h-8 w-8 text-amber-600" />,
+      title: "AI-Powered Search",
+      description:
+        "Find relevant Bible verses instantly with intelligent AI search that understands context and meaning.",
+    },
+    {
+      icon: <Book className="h-8 w-8 text-amber-600" />,
+      title: "Daily Verses",
+      description: "Receive personalized daily verses with AI-generated insights tailored to your spiritual journey.",
+    },
+    {
+      icon: <Heart className="h-8 w-8 text-amber-600" />,
+      title: "Life Guidance",
+      description: "Get biblical wisdom and guidance for life's challenges through AI-powered spiritual counseling.",
+    },
+    {
+      icon: <Zap className="h-8 w-8 text-amber-600" />,
+      title: "Text-to-Speech",
+      description: "Listen to scripture with high-quality AI voices for a more immersive experience.",
+    },
+  ]
 
-    const key = Object.keys(results).find((k) => query.toLowerCase().includes(k))
-    return key ? results[key as keyof typeof results] : results["strength"]
-  }
-
-  // Demo guidance response
-  const getDemoGuidance = (situation: string) => {
-    if (situation.toLowerCase().includes("forgiv")) {
-      return {
-        guidance:
-          "Forgiveness is one of the most challenging yet transformative aspects of the Christian faith. When someone has hurt us deeply, our natural response is often anger, resentment, or a desire for justice. However, God calls us to a higher standard - to forgive as we have been forgiven.\n\nRemember that forgiveness doesn't mean excusing the wrong or pretending it didn't happen. It means releasing the burden of resentment and choosing to trust God with justice.",
-        verses: [
-          {
-            reference: "Ephesians 4:32",
-            text: "Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.",
-          },
-        ],
-        steps: [
-          "Pray for the person who hurt you, even if it feels difficult at first",
-          "Write down your feelings in a journal and bring them to God in prayer",
-          "Seek wise counsel from a trusted pastor or Christian friend",
-        ],
-      }
-    }
-
-    return {
-      guidance:
-        "Life's challenges can feel overwhelming, but remember that you're not alone in this journey. God sees your situation and cares deeply about what you're experiencing.\n\nThe Bible reminds us that God works all things together for good for those who love Him. Even in difficult times, He is present with you, offering strength, wisdom, and peace.",
-      verses: [
-        {
-          reference: "Romans 8:28",
-          text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.",
-        },
-      ],
-      steps: [
-        "Spend time in prayer, honestly sharing your feelings with God",
-        "Read and meditate on relevant Bible passages",
-        "Seek wise counsel from trusted Christian friends or mentors",
-      ],
-    }
-  }
-
-  // Simulate typing effect
-  const simulateTyping = (text: string, callback: (text: string) => void) => {
-    setIsTyping(true)
-    let currentText = ""
-    let index = 0
-
-    const typeInterval = setInterval(() => {
-      if (index < text.length) {
-        currentText += text[index]
-        callback(currentText)
-        index++
-      } else {
-        setIsTyping(false)
-        clearInterval(typeInterval)
-      }
-    }, 30)
-  }
-
-  const handleDemoSearch = (query: string) => {
-    setSearchQuery(query)
-    // Simulate AI processing
-    setTimeout(() => {
-      // Results would appear here in the demo
-    }, 1000)
-  }
-
-  const handleDemoGuidance = (situation: string) => {
-    setGuidanceInput(situation)
-    // Simulate AI processing
-    setTimeout(() => {
-      // Guidance would appear here in the demo
-    }, 1500)
-  }
+  const testimonials = [
+    {
+      name: "Sarah M.",
+      text: "BibleAF has transformed my daily devotions. The AI insights are incredibly meaningful.",
+      rating: 5,
+    },
+    {
+      name: "David L.",
+      text: "Finding relevant verses for my situations has never been easier. Amazing technology!",
+      rating: 5,
+    },
+    {
+      name: "Maria R.",
+      text: "The daily verses with AI commentary have deepened my understanding of Scripture.",
+      rating: 5,
+    },
+  ]
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
-      <div className="divine-light-card rounded-2xl p-8 shadow-lg max-w-3xl w-full">
-        <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-500">
-          BibleAF
-        </h1>
-        <p className="text-xl md:text-2xl mb-8">
-          Experience the Bible like never before with AI-powered insights, daily verses, and life guidance.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/dashboard">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600"
-            >
-              Get Started
-            </Button>
-          </Link>
-          <Link href="/auth/login">
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-amber-600 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
-            >
-              Login
-            </Button>
-          </Link>
+    <main className="flex min-h-screen flex-col">
+      {/* Hero Section */}
+      <section className="relative flex min-h-screen items-center justify-center p-4 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950" />
+
+        <div className="relative z-10 divine-light-card rounded-2xl p-8 shadow-2xl max-w-4xl w-full">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="text-left">
+              <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-500">
+                BibleAF
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 text-gray-700 dark:text-gray-300">
+                Experience the Bible like never before with AI-powered insights, daily verses, and life guidance.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/dashboard">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white font-semibold px-8 py-3"
+                  >
+                    Get Started Free
+                  </Button>
+                </Link>
+                <Link href="/auth/login">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-amber-600 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 px-8 py-3"
+                  >
+                    Login
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative">
+              <Image
+                src="/images/ai-bible-robot.png"
+                alt="AI-powered Bible study with robot reading Holy Bible"
+                width={400}
+                height={500}
+                className="rounded-lg shadow-lg"
+                priority
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 px-4 bg-white dark:bg-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+              Powerful Features for Modern Bible Study
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              Combine the timeless wisdom of Scripture with cutting-edge AI technology for a deeper spiritual
+              experience.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex justify-center mb-4">{feature.icon}</div>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">{feature.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-400">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Traditional Meets Modern Section */}
+      <section className="py-20 px-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <Image
+                src="/images/hand-bible-pages.png"
+                alt="Hand turning pages of Holy Bible in warm lighting"
+                width={500}
+                height={600}
+                className="rounded-lg shadow-lg"
+              />
+            </div>
+
+            <div>
+              <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">
+                Where Tradition Meets Innovation
+              </h2>
+              <p className="text-lg text-gray-700 dark:text-gray-300 mb-6">
+                We honor the sacred tradition of Bible study while embracing modern technology to make Scripture more
+                accessible and meaningful than ever before.
+              </p>
+              <ul className="space-y-4 text-gray-700 dark:text-gray-300">
+                <li className="flex items-center">
+                  <Users className="h-5 w-5 text-amber-600 mr-3" />
+                  Join thousands of believers worldwide
+                </li>
+                <li className="flex items-center">
+                  <Book className="h-5 w-5 text-amber-600 mr-3" />
+                  Access the complete Bible with AI insights
+                </li>
+                <li className="flex items-center">
+                  <Heart className="h-5 w-5 text-amber-600 mr-3" />
+                  Personalized spiritual guidance
+                </li>
+                <li className="flex items-center">
+                  <Zap className="h-5 w-5 text-amber-600 mr-3" />
+                  Instant answers to your spiritual questions
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 px-4 bg-white dark:bg-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">What Our Users Say</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400">
+              Discover how BibleAF is transforming spiritual journeys worldwide
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 text-yellow-500 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 italic">"{testimonial.text}"</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">- {testimonial.name}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 bg-gradient-to-r from-amber-600 to-yellow-500">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl font-bold mb-6 text-white">Ready to Transform Your Bible Study?</h2>
+          <p className="text-xl text-amber-100 mb-8 max-w-2xl mx-auto">
+            Join thousands of believers who are discovering deeper meaning in Scripture with AI-powered insights.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/dashboard">
+              <Button size="lg" className="bg-white text-amber-600 hover:bg-amber-50 font-semibold px-8 py-3">
+                Start Your Journey
+              </Button>
+            </Link>
+            <Link href="/pricing">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white text-white hover:bg-white hover:text-amber-600 px-8 py-3"
+              >
+                View Pricing
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-4 bg-gray-900 text-white">
+        <div className="max-w-6xl mx-auto text-center">
+          <h3 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-400">
+            BibleAF
+          </h3>
+          <p className="text-gray-400 mb-6">AI-powered Bible study for the modern believer</p>
+          <div className="flex justify-center space-x-6 text-gray-400">
+            <Link href="/pricing" className="hover:text-amber-400 transition-colors">
+              Pricing
+            </Link>
+            <Link href="/dashboard" className="hover:text-amber-400 transition-colors">
+              Dashboard
+            </Link>
+            <Link href="/auth/login" className="hover:text-amber-400 transition-colors">
+              Login
+            </Link>
+          </div>
+          <div className="mt-8 pt-8 border-t border-gray-800 text-gray-500">
+            <p>&copy; 2024 BibleAF. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </main>
   )
 }

@@ -4,21 +4,38 @@ import { SUBSCRIPTION_PLANS } from "./stripe-config"
 
 // Initialize Stripe with better error handling
 let stripe: Stripe | null = null
+let stripeInitialized = false
 
-try {
-  if (!serverEnv.STRIPE_SECRET_KEY) {
-    console.error("STRIPE_SECRET_KEY is not set")
-  } else if (!serverEnv.STRIPE_SECRET_KEY.startsWith("sk_")) {
-    console.error("STRIPE_SECRET_KEY appears to be invalid (should start with 'sk_')")
-    console.error("Current key starts with:", serverEnv.STRIPE_SECRET_KEY.substring(0, 10))
-  } else {
-    stripe = new Stripe(serverEnv.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-10-16",
-    })
-    console.log("Stripe initialized successfully with key:", serverEnv.STRIPE_SECRET_KEY.substring(0, 7) + "...")
+function initializeStripe() {
+  if (stripeInitialized) return stripe
+
+  try {
+    if (!serverEnv.STRIPE_SECRET_KEY) {
+      console.log("Stripe not configured: STRIPE_SECRET_KEY is not set")
+      stripe = null
+    } else if (!serverEnv.STRIPE_SECRET_KEY.startsWith("sk_")) {
+      console.warn("STRIPE_SECRET_KEY appears to be invalid (should start with 'sk_')")
+      console.warn("Current key starts with:", serverEnv.STRIPE_SECRET_KEY.substring(0, 10))
+      stripe = null
+    } else {
+      stripe = new Stripe(serverEnv.STRIPE_SECRET_KEY, {
+        apiVersion: "2023-10-16",
+      })
+      console.log("Stripe initialized successfully")
+    }
+  } catch (error) {
+    console.warn("Failed to initialize Stripe:", error)
+    stripe = null
   }
-} catch (error) {
-  console.error("Failed to initialize Stripe:", error)
+
+  stripeInitialized = true
+  return stripe
+}
+
+// Helper function to check if Stripe is available
+export function isStripeAvailable(): boolean {
+  const stripeInstance = initializeStripe()
+  return stripeInstance !== null
 }
 
 // Helper function to create a checkout session
@@ -36,9 +53,10 @@ export async function createCheckoutSession({
   console.log("=== Creating Stripe Checkout Session ===")
 
   try {
-    // Check if Stripe is initialized
-    if (!stripe) {
-      throw new Error("Stripe is not properly configured. Check your STRIPE_SECRET_KEY environment variable.")
+    // Check if Stripe is available
+    const stripeInstance = initializeStripe()
+    if (!stripeInstance) {
+      throw new Error("Stripe is not configured. Please set up your Stripe environment variables.")
     }
 
     // Get the plan configuration
@@ -61,7 +79,7 @@ export async function createCheckoutSession({
     // Test Stripe connection first
     console.log("Testing Stripe connection...")
     try {
-      await stripe.prices.retrieve(plan.stripePriceId)
+      await stripeInstance.prices.retrieve(plan.stripePriceId)
       console.log("Price ID exists in Stripe:", plan.stripePriceId)
     } catch (priceError) {
       console.error("Price ID validation failed:", priceError)
@@ -80,7 +98,7 @@ export async function createCheckoutSession({
 
     // Create checkout session with the actual Stripe price ID
     console.log("Creating checkout session...")
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeInstance.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [
@@ -139,11 +157,12 @@ export async function createBillingPortalSession({
   returnUrl: string
 }) {
   try {
-    if (!stripe) {
-      throw new Error("Stripe is not properly configured")
+    const stripeInstance = initializeStripe()
+    if (!stripeInstance) {
+      throw new Error("Stripe is not configured")
     }
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await stripeInstance.billingPortal.sessions.create({
       customer: customerId,
       return_url: returnUrl,
     })
@@ -155,5 +174,8 @@ export async function createBillingPortalSession({
   }
 }
 
-// Export stripe instance for other uses
+// Export stripe instance for other uses (can be null)
 export { stripe }
+
+// Initialize on module load
+initializeStripe()

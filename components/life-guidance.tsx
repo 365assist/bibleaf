@@ -3,41 +3,31 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Compass, Loader2, Heart, BookOpen, Lightbulb } from "lucide-react"
-import Link from "next/link"
-
-interface GuidanceResult {
-  guidance: string
-  relevantVerses: Array<{
-    reference: string
-    text: string
-    relevanceScore: number
-    context?: string
-  }>
-  practicalSteps: string[]
-  prayerSuggestion?: string
-}
+import { MessageCircle, Loader2, Heart } from "lucide-react"
 
 interface LifeGuidanceProps {
   userId: string
   onSaveVerse?: (verse: { reference: string; text: string }) => void
+  onGuidanceComplete?: () => void
 }
 
-export default function LifeGuidance({ userId, onSaveVerse }: LifeGuidanceProps) {
-  const [situation, setSituation] = useState("")
-  const [guidance, setGuidance] = useState<GuidanceResult | null>(null)
+export default function LifeGuidance({ userId, onSaveVerse, onGuidanceComplete }: LifeGuidanceProps) {
+  const [query, setQuery] = useState("")
+  const [response, setResponse] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [bibleVerses, setBibleVerses] = useState<{ reference: string; text: string }[]>([])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!situation.trim()) return
+    if (!query.trim()) return
 
     try {
       setIsLoading(true)
       setError("")
-      setGuidance(null)
+      setResponse("")
+      setBibleVerses([])
 
       const response = await fetch("/api/ai/guidance", {
         method: "POST",
@@ -45,14 +35,15 @@ export default function LifeGuidance({ userId, onSaveVerse }: LifeGuidanceProps)
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          situation: situation.trim(),
+          query: query.trim(),
           userId,
         }),
       })
 
-      // Check if response is JSON
       const contentType = response.headers.get("content-type")
       if (!contentType || !contentType.includes("application/json")) {
+        const textResponse = await response.text()
+        console.error("Non-JSON response:", textResponse)
         throw new Error("Server returned non-JSON response. Please try again.")
       }
 
@@ -67,7 +58,17 @@ export default function LifeGuidance({ userId, onSaveVerse }: LifeGuidanceProps)
         return
       }
 
-      setGuidance(data.guidance)
+      setResponse(data.guidance || "")
+
+      if (data.verses && Array.isArray(data.verses)) {
+        setBibleVerses(data.verses)
+      }
+
+      // Notify parent component that guidance was completed successfully
+      console.log("Guidance completed successfully, calling onGuidanceComplete")
+      if (onGuidanceComplete) {
+        onGuidanceComplete()
+      }
     } catch (error) {
       console.error("Guidance error:", error)
       if (error instanceof Error) {
@@ -80,41 +81,50 @@ export default function LifeGuidance({ userId, onSaveVerse }: LifeGuidanceProps)
     }
   }
 
-  const handleSaveVerse = async (verse: { reference: string; text: string }) => {
+  const handleSaveVerse = (verse: { reference: string; text: string }) => {
     if (onSaveVerse) {
       onSaveVerse(verse)
     }
   }
 
+  const handleExampleQuestion = (question: string) => {
+    setQuery(question)
+    // Trigger search automatically with a slight delay to ensure state is updated
+    setTimeout(() => {
+      const fakeEvent = { preventDefault: () => {} } as React.FormEvent
+      handleSubmit(fakeEvent)
+    }, 100)
+  }
+
   return (
     <div className="space-y-6">
-      {/* Input Form */}
+      {/* Guidance Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2 text-foreground">Describe your situation or question:</label>
+        <div className="relative">
+          <MessageCircle className="absolute left-3 top-3 text-muted-foreground" size={18} />
           <textarea
-            placeholder="Share what you're going through... For example: 'I'm struggling with forgiving someone who hurt me deeply' or 'I'm facing a difficult decision about my career and need wisdom'"
-            value={situation}
-            onChange={(e) => setSituation(e.target.value)}
-            className="w-full p-4 border border-border rounded-lg h-32 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="Ask for spiritual guidance... 'How can I find peace during difficult times?' or 'What does the Bible say about making important decisions?'"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 min-h-[100px] border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             disabled={isLoading}
           />
         </div>
 
         <button
           type="submit"
-          disabled={isLoading || !situation.trim()}
-          className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+          disabled={isLoading || !query.trim()}
+          className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <>
               <Loader2 className="animate-spin" size={16} />
-              Getting guidance...
+              Getting Guidance...
             </>
           ) : (
             <>
-              <Compass size={16} />
-              Get Spiritual Guidance
+              <MessageCircle size={16} />
+              Get Biblical Guidance
             </>
           )}
         </button>
@@ -136,114 +146,71 @@ export default function LifeGuidance({ userId, onSaveVerse }: LifeGuidanceProps)
         </div>
       )}
 
-      {/* Guidance Results */}
-      {guidance && (
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center space-y-3">
+            <Loader2 className="animate-spin mx-auto text-primary" size={32} />
+            <p className="text-muted-foreground">AI is analyzing your question...</p>
+            <p className="text-sm text-muted-foreground">Finding biblical wisdom and guidance</p>
+          </div>
+        </div>
+      )}
+
+      {/* Guidance Response */}
+      {!isLoading && response && (
         <div className="space-y-6">
-          {/* Main Guidance */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
-              <Compass className="text-primary" size={20} />
-              Spiritual Guidance
-            </h3>
+          <div className="bg-card border rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Biblical Guidance</h3>
             <div className="prose prose-sm max-w-none">
-              {guidance.guidance.split("\n").map((paragraph, index) => (
-                <p key={index} className="mb-3 leading-relaxed text-foreground">
+              {response.split("\n").map((paragraph, index) => (
+                <p key={index} className="mb-4 last:mb-0">
                   {paragraph}
                 </p>
               ))}
             </div>
           </div>
 
-          {/* Relevant Verses */}
-          {guidance.relevantVerses.length > 0 && (
+          {/* Bible Verses */}
+          {bibleVerses.length > 0 && (
             <div className="space-y-4">
-              <h4 className="text-lg font-semibold flex items-center gap-2 text-foreground">
-                <BookOpen className="text-primary" size={20} />
-                Relevant Bible Verses
-              </h4>
-
-              {guidance.relevantVerses.map((verse, index) => (
-                <div key={index} className="bg-card border border-border rounded-lg p-4 shadow-sm">
-                  <div className="flex justify-between items-start mb-3">
-                    <h5 className="font-semibold text-primary">{verse.reference}</h5>
+              <h3 className="text-lg font-semibold">Relevant Bible Verses</h3>
+              {bibleVerses.map((verse, index) => (
+                <div key={index} className="bg-muted/30 border rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-semibold text-primary">{verse.reference}</h4>
                     <button
                       onClick={() => handleSaveVerse(verse)}
                       className="p-2 hover:bg-muted rounded-full transition-colors"
                       title="Save verse"
                     >
-                      <Heart size={16} className="text-muted-foreground hover:text-red-500" />
+                      <Heart size={16} />
                     </button>
                   </div>
-
-                  <p className="text-foreground leading-relaxed mb-3 text-base">{verse.text}</p>
-
-                  {verse.context && (
-                    <div className="bg-muted/50 p-3 rounded-md">
-                      <p className="text-sm text-muted-foreground italic">{verse.context}</p>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <BookOpen size={14} className="text-muted-foreground" />
-                    <Link
-                      href={`/bible/${encodeURIComponent(verse.reference.split(" ")[0])}/${verse.reference.split(" ")[1]?.split(":")[0] || "1"}${verse.reference.includes(":") ? `?verse=${verse.reference.split(":")[1]}` : ""}`}
-                      className="text-sm text-primary hover:text-primary/80 underline-offset-4 hover:underline"
-                    >
-                      Read full chapter →
-                    </Link>
-                  </div>
+                  <p className="mt-2 text-foreground">{verse.text}</p>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Practical Steps */}
-          {guidance.practicalSteps.length > 0 && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
-                <Lightbulb className="text-primary" size={20} />
-                Practical Steps
-              </h4>
-              <ol className="space-y-3">
-                {guidance.practicalSteps.map((step, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                      {index + 1}
-                    </span>
-                    <span className="text-sm leading-relaxed text-foreground">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-
-          {/* Prayer Suggestion */}
-          {guidance.prayerSuggestion && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 shadow-sm">
-              <h4 className="text-lg font-semibold mb-3 text-primary">Suggested Prayer</h4>
-              <p className="text-foreground italic leading-relaxed">{guidance.prayerSuggestion}</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Example Situations */}
-      {!guidance && !isLoading && !error && (
-        <div className="bg-muted/30 border border-border p-6 rounded-lg">
-          <h4 className="font-medium mb-3 text-foreground">Example situations you can ask about:</h4>
+      {/* Example Questions */}
+      {!response && !isLoading && !error && (
+        <div className="bg-muted/30 p-6 rounded-lg">
+          <h4 className="font-medium mb-3">Try asking:</h4>
           <div className="grid grid-cols-1 gap-2">
             {[
-              "I'm struggling with anxiety about the future",
-              "I need to forgive someone who hurt me",
-              "I'm facing a difficult decision about my career",
-              "I'm dealing with loneliness and isolation",
-              "I'm having trouble trusting God during hard times",
-              "I need wisdom for a relationship conflict",
+              "How can I find peace during difficult times?",
+              "What does the Bible say about making important decisions?",
+              "How can I strengthen my faith when I have doubts?",
+              "What guidance does the Bible offer for dealing with grief?",
+              "How should I approach conflicts with others according to the Bible?",
             ].map((example) => (
               <button
                 key={example}
-                onClick={() => setSituation(example)}
-                className="text-left text-sm text-muted-foreground hover:text-foreground p-3 rounded hover:bg-background transition-colors border border-transparent hover:border-border"
+                onClick={() => handleExampleQuestion(example)}
+                className="text-left text-sm text-muted-foreground hover:text-foreground p-2 rounded hover:bg-background transition-colors"
               >
                 "{example}"
               </button>

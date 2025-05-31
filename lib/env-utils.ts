@@ -26,10 +26,10 @@ export const isDevelopment = () => {
 // Safe environment access that doesn't trigger warnings for build-time variables
 export function safeGetEnv(key: string): string {
   // Build-time only variables that shouldn't be accessed at runtime
-  const buildTimeVars = ["NPM_RC", "NPM_TOKEN"]
+  const buildTimeVars = ["NPM_RC", "NPM_TOKEN", "ANALYZE", "BUNDLE_ANALYZE"]
 
-  if (isClient && buildTimeVars.includes(key)) {
-    return ""
+  if (buildTimeVars.includes(key)) {
+    return "" // Silently return empty string for build-time variables
   }
 
   if (isClient && !key.startsWith("NEXT_PUBLIC_")) {
@@ -42,15 +42,18 @@ export function safeGetEnv(key: string): string {
 
 // Prevent client-side access to server-only environment variables
 export function preventClientAccess(variableName: string): string {
-  // Build-time only variables
-  const buildTimeVars = ["NPM_RC", "NPM_TOKEN"]
+  // Build-time only variables - silently return empty string
+  const buildTimeVars = ["NPM_RC", "NPM_TOKEN", "ANALYZE", "BUNDLE_ANALYZE"]
+
+  if (buildTimeVars.includes(variableName)) {
+    return "" // No warning for build-time variables
+  }
 
   if (isClient) {
-    if (!buildTimeVars.includes(variableName)) {
-      console.warn(`${variableName} cannot be accessed on the client.`)
-    }
+    console.warn(`${variableName} cannot be accessed on the client.`)
     return ""
   }
+
   return process.env[variableName] || ""
 }
 
