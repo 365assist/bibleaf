@@ -14,6 +14,7 @@ export interface UserData {
   preferences: {
     theme: "light" | "dark" | "system"
     notifications: boolean
+    verseCategories: string[]
   }
   createdAt: string
   updatedAt: string
@@ -66,6 +67,32 @@ const handleBlobError = (error: any, operation: string) => {
 
   console.error(`Blob storage error for ${operation}:`, errorMessage)
   return "ERROR"
+}
+
+// Initialize user data function
+export async function initializeUserData(userId: string, userData: Partial<UserData>): Promise<void> {
+  const fullUserData: UserData = {
+    id: userId,
+    email: userData.email || `${userId}@example.com`,
+    name: userData.name || userId.split("@")[0] || "User",
+    subscription: {
+      tier: "free",
+      status: "active",
+      searchesUsedToday: 0,
+      lastSearchReset: new Date().toISOString(),
+      ...userData.subscription,
+    },
+    preferences: {
+      theme: "system",
+      notifications: true,
+      verseCategories: [],
+      ...userData.preferences,
+    },
+    createdAt: userData.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  await saveUserData(fullUserData)
 }
 
 // User data operations
@@ -453,6 +480,7 @@ export async function updateUsageTracking(userId: string, type: "search" | "guid
           preferences: {
             theme: "system",
             notifications: true,
+            verseCategories: [],
           },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

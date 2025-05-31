@@ -13,6 +13,31 @@ import AIBibleSearch from "@/components/ai-bible-search"
 import LifeGuidance from "@/components/life-guidance"
 import SavedVersesManager from "@/components/saved-verses-manager"
 
+// Move this function before the component
+const getSearchLimitNumber = (tier: string): number => {
+  switch (tier) {
+    case "premium":
+    case "annual":
+      return Number.POSITIVE_INFINITY
+    case "basic":
+      return 20
+    default:
+      return 5
+  }
+}
+
+const getSearchLimitDisplay = (tier: string): string => {
+  switch (tier) {
+    case "premium":
+    case "annual":
+      return "Unlimited"
+    case "basic":
+      return "20 per day"
+    default:
+      return "5 per day"
+  }
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
@@ -39,8 +64,13 @@ export default function DashboardPage() {
         setSearchCount(currentUser.subscription.searchesUsedToday || 0)
         setSearchLimit(getSearchLimitNumber(currentUser.subscription.tier))
 
-        // Fetch the latest usage data
-        await fetchUsageData(currentUser.id)
+        // Fetch the latest usage data (with error handling)
+        try {
+          await fetchUsageData(currentUser.id)
+        } catch (usageError) {
+          console.warn("Failed to fetch usage data, using local data:", usageError)
+          // Continue with local user data if API fails
+        }
       } catch (error) {
         console.error("Error loading dashboard:", error)
         // Fallback: redirect to login if there's an error
@@ -74,15 +104,18 @@ export default function DashboardPage() {
   const fetchUsageData = async (userId: string) => {
     setIsLoadingUsage(true)
     try {
-      const response = await fetch(`/api/usage/track?userId=${userId}`)
+      const response = await fetch(`/api/usage/track?userId=${encodeURIComponent(userId)}`)
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        console.warn(`Usage API returned ${response.status}, using fallback data`)
+        // Don't throw error, just use fallback data
+        return
       }
 
       const contentType = response.headers.get("content-type")
       if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Response is not JSON")
+        console.warn("Usage API returned non-JSON response, using fallback data")
+        return
       }
 
       const data = await response.json()
@@ -104,7 +137,7 @@ export default function DashboardPage() {
         })
       }
     } catch (error) {
-      console.error("Error fetching usage data:", error)
+      console.warn("Error fetching usage data, using fallback:", error)
       // Fallback to user data if API fails
       if (user) {
         setSearchCount(user.subscription.searchesUsedToday || 0)
@@ -136,26 +169,31 @@ export default function DashboardPage() {
         }
       })
 
-      // Track the usage on the server
-      const response = await fetch("/api/usage/track", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          type: "search",
-        }),
-      })
+      // Track the usage on the server (with error handling)
+      try {
+        const response = await fetch("/api/usage/track", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            type: "search",
+          }),
+        })
 
-      if (!response.ok) {
-        console.error("Failed to track usage:", await response.text())
+        if (!response.ok) {
+          console.warn("Failed to track usage on server:", await response.text())
+        } else {
+          // Fetch latest data from server to ensure accuracy
+          await fetchUsageData(user.id)
+        }
+      } catch (trackError) {
+        console.warn("Error tracking search on server:", trackError)
+        // Continue with local tracking if server fails
       }
-
-      // Fetch latest data from server to ensure accuracy
-      await fetchUsageData(user.id)
     } catch (error) {
-      console.error("Error tracking search:", error)
+      console.error("Error in handleSearchComplete:", error)
     }
   }
 
@@ -214,30 +252,6 @@ export default function DashboardPage() {
             Free
           </Badge>
         )
-    }
-  }
-
-  const getSearchLimitNumber = (tier: string): number => {
-    switch (tier) {
-      case "premium":
-      case "annual":
-        return Number.POSITIVE_INFINITY
-      case "basic":
-        return 20
-      default:
-        return 5
-    }
-  }
-
-  const getSearchLimitDisplay = (tier: string): string => {
-    switch (tier) {
-      case "premium":
-      case "annual":
-        return "Unlimited"
-      case "basic":
-        return "20 per day"
-      default:
-        return "5 per day"
     }
   }
 

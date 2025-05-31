@@ -3,6 +3,16 @@ import { isServer } from "./env-utils"
 // List of build-time only variables that should never be accessed at runtime
 const BUILD_TIME_ONLY_VARS = ["NPM_RC", "NPM_TOKEN", "ANALYZE", "BUNDLE_ANALYZE"]
 
+// Add client-side protection
+if (typeof window !== "undefined") {
+  // Suppress build-time variable warnings on client
+  BUILD_TIME_ONLY_VARS.forEach((varName) => {
+    if (process.env[varName]) {
+      console.warn(`Build-time variable ${varName} should not be accessed on client`)
+    }
+  })
+}
+
 // Server-side environment variables
 // These are ONLY available on the server
 export const serverEnv = {
