@@ -166,46 +166,6 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-8 space-y-4">
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-amber-200 dark:border-amber-800"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white/80 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400">
-                      Developer Access
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ email: "dev@bibleaf.com", password: "dev2024!" })}
-                    className="text-left p-4 border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-sm transition-colors"
-                  >
-                    <div className="font-medium text-gray-800 dark:text-gray-200">Developer Account</div>
-                    <div className="text-gray-500 dark:text-gray-400">dev@bibleaf.com / dev2024!</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ email: "admin@bibleaf.com", password: "admin2024!" })}
-                    className="text-left p-4 border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-sm transition-colors"
-                  >
-                    <div className="font-medium text-gray-800 dark:text-gray-200">Admin Account</div>
-                    <div className="text-gray-500 dark:text-gray-400">admin@bibleaf.com / admin2024!</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ email: "test@bibleaf.com", password: "test2024!" })}
-                    className="text-left p-4 border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-sm transition-colors"
-                  >
-                    <div className="font-medium text-gray-800 dark:text-gray-200">Test Account</div>
-                    <div className="text-gray-500 dark:text-gray-400">test@bibleaf.com / test2024!</div>
-                  </button>
-                </div>
-              </div>
-
               <div className="mt-8 text-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Don't have an account?{" "}
