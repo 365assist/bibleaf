@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { stripeConfig, SUBSCRIPTION_PLANS, FREE_TIER, formatPrice, type SubscriptionPlan } from "@/lib/stripe-config"
+import { SUBSCRIPTION_PLANS, FREE_TIER, formatPrice, type SubscriptionPlan } from "@/lib/stripe-config"
+import { isStripeConfiguredClient } from "@/lib/env-client"
 
 interface SubscriptionModalProps {
   isOpen: boolean
@@ -21,8 +22,8 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
       setIsLoading(true)
       setSelectedPlan(plan)
 
-      if (!stripeConfig.isConfigured) {
-        alert("Payment system is not configured. This is a demo version.")
+      if (!isStripeConfiguredClient) {
+        alert("Payment system is not configured. Please contact support.")
         return
       }
 
@@ -32,7 +33,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          planId: plan.id,
+          planId: plan.id, // Use plan.id instead of plan.stripePriceId
           userId: userId,
           successUrl: `${window.location.origin}/dashboard?subscription=success`,
           cancelUrl: `${window.location.origin}/dashboard?subscription=canceled`,
@@ -46,13 +47,14 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
       }
 
       if (data.url) {
+        // Redirect to Stripe Checkout using the URL
         window.location.href = data.url
       } else {
         throw new Error("No checkout URL returned")
       }
     } catch (error) {
       console.error("Error creating checkout session:", error)
-      alert("Failed to process subscription. Please try again.")
+      alert(`Failed to process subscription: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setIsLoading(false)
       setSelectedPlan(null)
@@ -69,10 +71,10 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
           </button>
         </div>
 
-        {!stripeConfig.isConfigured && (
+        {!isStripeConfiguredClient && (
           <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              <strong>Demo Mode:</strong> Payment processing is not configured. This is for demonstration purposes only.
+              <strong>Payment System Not Configured:</strong> Stripe integration is not set up. Please contact support.
             </p>
           </div>
         )}
@@ -131,7 +133,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
 
               <button
                 onClick={() => handleSubscribe(plan)}
-                disabled={isLoading || currentPlan === plan.id}
+                disabled={isLoading || currentPlan === plan.id || !isStripeConfiguredClient}
                 className={`w-full py-2 px-4 rounded-md ${
                   currentPlan === plan.id
                     ? "bg-muted text-muted-foreground"
@@ -150,7 +152,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>Secure payment processing {stripeConfig.isConfigured ? "by Stripe" : "(Demo Mode)"}</p>
+          <p>Secure payment processing by Stripe</p>
           <p className="mt-1">Cancel anytime. No hidden fees.</p>
         </div>
       </div>

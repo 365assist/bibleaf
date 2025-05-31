@@ -1,165 +1,138 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { useTheme } from "next-themes"
-import { Sun, Moon, CreditCard, Check } from "lucide-react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { CheckCircle, CreditCard, ArrowLeft } from "lucide-react"
+import { formatPrice, getPlanById } from "@/lib/stripe-config"
 
-export default function PaymentDemoPage() {
-  const { theme, setTheme } = useTheme()
-  const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success">("idle")
+export default function DemoPaymentPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
 
-  const handlePayment = () => {
-    setPaymentStatus("processing")
-    
+  const planId = searchParams.get("plan")
+  const amount = searchParams.get("amount")
+
+  const plan = planId ? getPlanById(planId) : null
+
+  const handleDemoPayment = async () => {
+    setIsProcessing(true)
+
     // Simulate payment processing
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    setIsProcessing(false)
+    setIsComplete(true)
+
+    // Redirect to success page after 2 seconds
     setTimeout(() => {
-      setPaymentStatus("success")
+      router.push("/dashboard?subscription=success")
     }, 2000)
   }
 
+  if (!plan) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-destructive mb-4">Invalid Payment Link</h1>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isComplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <CheckCircle className="mx-auto text-green-500" size={64} />
+          <h1 className="text-2xl font-bold text-green-600">Payment Successful!</h1>
+          <p className="text-muted-foreground">Welcome to {plan.name}! Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Image 
-              src="/christian-logo.png" 
-              alt="BibleAF Logo" 
-              width={36} 
-              height={36} 
-              className="mr-1"
-            />
-            <span className="text-primary">Bible</span>
-            <span className="bg-secondary text-secondary-foreground px-1 rounded">AF</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-full hover:bg-muted"
-            >
-              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+    <div className="min-h-screen bg-background py-12">
+      <div className="container max-w-md mx-auto">
+        <div className="bg-card border rounded-lg p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.back()} className="p-2 hover:bg-muted rounded-full">
+              <ArrowLeft size={20} />
             </button>
-            <Link
-              href="/"
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 scripture-button"
-            >
-              Home
-            </Link>
+            <h1 className="text-xl font-bold">Demo Payment</h1>
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 container py-12">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Payment Demo</h1>
-          
-          <div className="bg-background rounded-lg border prayer-card p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">Premium Plan</h2>
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <p className="text-2xl font-bold">$9.99<span className="text-sm text-muted-foreground">/month</span></p>
-                <p className="text-muted-foreground">For deeper spiritual growth</p>
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              <strong>Demo Mode:</strong> This is a demonstration. No real payment will be processed.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Order Summary</h2>
+
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex justify-between">
+                <span className="font-medium">{plan.name} Plan</span>
+                <span className="font-bold">{formatPrice(plan.price)}</span>
               </div>
-              <div className="bg-secondary/20 text-secondary px-3 py-1 rounded-full text-sm">
-                Most Popular
+
+              <div className="text-sm text-muted-foreground">
+                Billed {plan.interval === "month" ? "monthly" : "annually"}
               </div>
-            </div>
-            
-            <div className="space-y-2 mb-6">
-              <div className="flex items-start">
-                <span className="text-secondary mr-2">✓</span>
-                <span>All Basic features</span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-secondary mr-2">✓</span>
-                <span>Unlimited AI-powered searches</span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-secondary mr-2">✓</span>
-                <span>Unlimited Life guidance</span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-secondary mr-2">✓</span>
-                <span>Advanced verse tagging</span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-secondary mr-2">✓</span>
-                <span>Reading progress tracking</span>
-              </div>
-            </div>
-            
-            {paymentStatus === "idle" && (
-              <button
-                onClick={handlePayment}
-                className="w-full bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 flex items-center justify-center gap-2 scripture-button"
-              >
-                <CreditCard size={18} />
-                <span>Process Payment</span>
-              </button>
-            )}
-            
-            {paymentStatus === "processing" && (
-              <button
-                disabled
-                className="w-full bg-primary/70 text-primary-foreground py-3 rounded-md flex items-center justify-center gap-2"
-              >
-                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-                <span>Processing...</span>
-              </button>
-            )}
-            
-            {paymentStatus === "success" && (
-              <div className="space-y-4">
-                <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 p-4 rounded-md flex items-start gap-3">
-                  <div className="bg-green-200 dark:bg-green-800 rounded-full p-1 mt-0.5">
-                    <Check size={16} className="text-green-700 dark:text-green-300" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Payment Successful!</p>
-                    <p className="text-sm mt-1">Your Premium subscription is now active.</p>
-                  </div>
+
+              <div className="border-t pt-3">
+                <div className="flex justify-between font-bold">
+                  <span>Total</span>
+                  <span>{formatPrice(plan.price)}</span>
                 </div>
-                
-                <Link
-                  href="/dashboard"
-                  className="w-full bg-secondary text-secondary-foreground py-3 rounded-md hover:bg-secondary/90 flex items-center justify-center gap-2 scripture-button"
-                >
-                  Go to Dashboard
-                </Link>
               </div>
-            )}
-          </div>
-          
-          <div className="text-center text-sm text-muted-foreground">
-            <p>This is a demo page. No actual payment is processed.</p>
-            <p className="mt-1">In a production environment, this would connect to a payment processor like Stripe.</p>
-          </div>
-        </div>
-      </main>
+            </div>
 
-      {/* Footer */}
-      <footer className="border-t mt-auto">
-        <div className="container py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <Image 
-                src="/christian-logo.png" 
-                alt="BibleAF Logo" 
-                width={24} 
-                height={24} 
-              />
-              <span className="text-sm">BibleAF</span>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              &copy; {new Date().getFullYear()} BibleAF. All rights reserved.
+            <div className="space-y-3">
+              <h3 className="font-medium">What you'll get:</h3>
+              <ul className="space-y-1">
+                {plan.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="text-green-500 mt-0.5" size={16} />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
+
+          <button
+            onClick={handleDemoPayment}
+            disabled={isProcessing}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isProcessing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <CreditCard size={20} />
+                Complete Demo Payment
+              </>
+            )}
+          </button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            In production, this would redirect to Stripe Checkout for secure payment processing.
+          </p>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }

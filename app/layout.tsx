@@ -3,14 +3,18 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
+import { OfflineIndicator } from "@/components/offline-indicator"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "BibleAF - AI-Powered Spiritual Companion",
-  description: "Your personal AI-powered Bible companion for spiritual guidance and study",
+  title: "BibleAF - AI-Powered Bible Study",
+  description: "Experience the Bible like never before with AI-powered insights, daily verses, and life guidance.",
   manifest: "/manifest.json",
-  themeColor: "#3b82f6",
+  themeColor: "#000000",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  applicationName: "BibleAF",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -22,17 +26,17 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "BibleAF",
-    title: "BibleAF - AI-Powered Spiritual Companion",
-    description: "Your personal AI-powered Bible companion for spiritual guidance and study",
+    title: "BibleAF - AI-Powered Bible Study",
+    description: "Experience the Bible like never before with AI-powered insights, daily verses, and life guidance.",
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
+    icon: ["/favicon.ico"],
+    shortcut: ["/favicon.ico"],
     apple: [
       { url: "/icons/icon-192x192.png" },
-      { url: "/icons/icon-192x192.png", sizes: "152x152", type: "image/png" },
-      { url: "/icons/icon-192x192.png", sizes: "180x180", type: "image/png" },
-      { url: "/icons/icon-192x192.png", sizes: "167x167", type: "image/png" },
+      { url: "/icons/icon-192x192.png", sizes: "152x152" },
+      { url: "/icons/icon-192x192.png", sizes: "180x180" },
+      { url: "/icons/icon-192x192.png", sizes: "167x167" },
     ],
   },
     generator: 'v0.dev'
@@ -40,24 +44,39 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-        <meta name="application-name" content="BibleAF" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="BibleAF" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="manifest" href="/manifest.json" />
+        {/* Service Worker Registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(registration) {
+                      console.log('Service Worker registration successful with scope: ', registration.scope);
+                    },
+                    function(err) {
+                      console.log('Service Worker registration failed: ', err);
+                    }
+                  );
+                });
+              }
+            `,
+          }}
+        />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} divine-light-bg`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
-          <div id="offline-indicator"></div>
+          <div className="divine-light-overlay min-h-screen">
+            {children}
+            <OfflineIndicator />
+            <Toaster />
+          </div>
         </ThemeProvider>
       </body>
     </html>

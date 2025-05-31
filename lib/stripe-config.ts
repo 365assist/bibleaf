@@ -1,14 +1,29 @@
-import { env } from "./env"
+import { clientEnv } from "./env-client"
+
+// Server-side environment access (only works on server)
+const getServerEnv = (key: string) => {
+  if (typeof window !== "undefined") {
+    return "" // Client-side, return empty
+  }
+  return process.env[key] || ""
+}
 
 // Stripe configuration
 export const stripeConfig = {
-  publishableKey: env.STRIPE_PUBLISHABLE_KEY,
-  secretKey: env.STRIPE_SECRET_KEY,
-  webhookSecret: env.STRIPE_WEBHOOK_SECRET,
-  isConfigured: !!(env.STRIPE_SECRET_KEY && env.STRIPE_PUBLISHABLE_KEY),
+  publishableKey: clientEnv.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  secretKey: getServerEnv("STRIPE_SECRET_KEY"),
+  webhookSecret: getServerEnv("STRIPE_WEBHOOK_SECRET"),
+  get isConfigured() {
+    if (typeof window !== "undefined") {
+      // Client-side check
+      return !!this.publishableKey
+    }
+    // Server-side check
+    return !!(this.secretKey && this.webhookSecret && this.publishableKey)
+  },
 }
 
-// Subscription plans with real Stripe price IDs (you'll need to create these in Stripe)
+// Subscription plans with updated live Stripe price IDs
 export interface SubscriptionPlan {
   id: string
   name: string
@@ -17,7 +32,7 @@ export interface SubscriptionPlan {
   interval: "month" | "year"
   features: string[]
   searchesPerDay: number
-  stripePriceId?: string // Real Stripe price ID
+  stripePriceId?: string // Live Stripe price ID
   popular?: boolean
 }
 
@@ -37,13 +52,13 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Offline access",
     ],
     searchesPerDay: 20,
-    stripePriceId: "price_basic_monthly", // Replace with real Stripe price ID
+    stripePriceId: "price_1RUrjRBiT317Uae5TiLEGTsD", // Live price ID for $4.99/month
   },
   {
     id: "premium",
     name: "Premium",
     description: "Advanced features for deeper spiritual growth",
-    price: 999, // $9.99
+    price: 1999, // $19.99
     interval: "month",
     features: [
       "All Basic features",
@@ -55,24 +70,24 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Priority support",
     ],
     searchesPerDay: Number.POSITIVE_INFINITY,
-    stripePriceId: "price_premium_monthly", // Replace with real Stripe price ID
+    stripePriceId: "price_1RUrkHBiT317Uae5OtdFxSdn", // Live price ID for $19.99/month
     popular: true,
   },
   {
     id: "annual",
     name: "Annual Premium",
-    description: "Best value with 2 months free",
-    price: 9999, // $99.99 (instead of $119.88)
+    description: "Best value with 1 month free",
+    price: 9999, // $99.99
     interval: "year",
     features: [
       "All Premium features",
-      "2 months free",
+      "1 month free",
       "Early access to new features",
       "Downloadable study materials",
       "VIP support",
     ],
     searchesPerDay: Number.POSITIVE_INFINITY,
-    stripePriceId: "price_premium_yearly", // Replace with real Stripe price ID
+    stripePriceId: "price_1RUrlCBiT317Uae5W9CKifrf", // Live price ID for $99.99/year
   },
 ]
 

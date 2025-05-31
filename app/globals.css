@@ -57,3 +57,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Divine Light Background Styles */
+.divine-light-bg {
+  background-image: url("/images/divine-light-background.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.divine-light-overlay {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.7));
+}
+
+.divine-light-card {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .divine-light-overlay {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.65));
+}
+
+.dark .divine-light-card {
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

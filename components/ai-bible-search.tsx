@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { Search, Loader2, BookOpen, Heart } from "lucide-react"
+import Link from "next/link"
 
 interface SearchResult {
   reference: string
@@ -33,6 +34,8 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
       setError("")
       setResults([])
 
+      console.log("Starting search for:", query.trim())
+
       const response = await fetch("/api/ai/search", {
         method: "POST",
         headers: {
@@ -44,7 +47,19 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
         }),
       })
 
+      console.log("Response status:", response.status)
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()))
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const textResponse = await response.text()
+        console.error("Non-JSON response:", textResponse)
+        throw new Error("Server returned non-JSON response. Please try again.")
+      }
+
       const data = await response.json()
+      console.log("Response data:", data)
 
       if (!response.ok) {
         if (data.limitExceeded) {
@@ -55,10 +70,20 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
         return
       }
 
-      setResults(data.results || [])
+      if (data.results && Array.isArray(data.results)) {
+        console.log("Setting results:", data.results)
+        setResults(data.results)
+      } else {
+        console.warn("No results in response or results not an array:", data)
+        setResults([])
+      }
     } catch (error) {
       console.error("Search error:", error)
-      setError("Failed to search. Please try again.")
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError("Failed to search. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -73,6 +98,13 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
     }
   }
 
+  const handleExampleSearch = (exampleQuery: string) => {
+    setQuery(exampleQuery)
+    // Trigger search automatically
+    const fakeEvent = { preventDefault: () => {} } as React.FormEvent
+    handleSearch(fakeEvent)
+  }
+
   return (
     <div className="space-y-6">
       {/* Search Form */}
@@ -84,7 +116,7 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
             placeholder="Ask anything... 'verses about overcoming fear' or 'what does the Bible say about forgiveness?'"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border rounded-lg text-sm"
+            className="w-full pl-10 pr-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             disabled={isLoading}
           />
         </div>
@@ -115,7 +147,7 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
           <p className="text-sm mt-1">{error}</p>
           {error.includes("limit") && (
             <button
-              onClick={() => (window.location.href = "/dashboard/profile")}
+              onClick={() => (window.location.href = "/dashboard?activeTab=profile")}
               className="text-sm underline mt-2 hover:no-underline"
             >
               Upgrade your plan →
@@ -124,10 +156,21 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
         </div>
       )}
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center space-y-3">
+            <Loader2 className="animate-spin mx-auto text-primary" size={32} />
+            <p className="text-muted-foreground">AI is analyzing your query...</p>
+            <p className="text-sm text-muted-foreground">Finding the most relevant Bible verses</p>
+          </div>
+        </div>
+      )}
+
       {/* Search Results */}
-      {results.length > 0 && (
+      {!isLoading && results.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Search Results</h3>
+          <h3 className="text-lg font-semibold">Search Results ({results.length} verses found)</h3>
 
           {results.map((result, index) => (
             <div key={index} className="bg-card border rounded-lg p-6 space-y-4">
@@ -157,10 +200,23 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
 
               <div className="flex items-center gap-2 pt-2">
                 <BookOpen size={14} className="text-muted-foreground" />
-                <button className="text-sm text-primary hover:text-primary/80">Read full chapter →</button>
+                <Link
+                  href={`/bible/${encodeURIComponent(result.reference.split(" ")[0])}/${result.reference.split(" ")[1]?.split(":")[0] || "1"}${result.reference.includes(":") ? `?verse=${result.reference.split(":")[1]}` : ""}`}
+                  className="text-sm text-primary hover:text-primary/80"
+                >
+                  Read full chapter →
+                </Link>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* No Results */}
+      {!isLoading && query && results.length === 0 && !error && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-4">No results found for "{query}"</p>
+          <p className="text-sm text-muted-foreground">Try rephrasing your question or using different keywords</p>
         </div>
       )}
 
@@ -179,7 +235,7 @@ export default function AIBibleSearch({ userId, onSaveVerse }: AIBibleSearchProp
             ].map((example) => (
               <button
                 key={example}
-                onClick={() => setQuery(example)}
+                onClick={() => handleExampleSearch(example)}
                 className="text-left text-sm text-muted-foreground hover:text-foreground p-2 rounded hover:bg-background transition-colors"
               >
                 "{example}"

@@ -17,6 +17,7 @@ export default function SavedVersesManager({ userId }: SavedVersesManagerProps) 
   const [selectedTag, setSelectedTag] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Fetch verses on component mount
   useEffect(() => {
@@ -46,14 +47,54 @@ export default function SavedVersesManager({ userId }: SavedVersesManagerProps) 
   const fetchVerses = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/user/verses?userId=${userId}`)
-      const data = await response.json()
+      setError(null)
 
-      if (data.verses) {
-        setVerses(data.verses)
+      const response = await fetch(`/api/user/verses?userId=${encodeURIComponent(userId)}`)
+
+      // Check if response is ok
+      if (!response.ok) {
+        console.error(`Error fetching verses: HTTP ${response.status}`)
+        setVerses([])
+        setError(`Failed to fetch verses (${response.status})`)
+        return
+      }
+
+      // Check content type
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("Response is not JSON:", contentType)
+        setVerses([])
+        setError("Invalid response format")
+        return
+      }
+
+      const text = await response.text()
+
+      // Check if we have actual content before parsing
+      if (!text || !text.trim()) {
+        console.log("No verses data returned")
+        setVerses([])
+        return
+      }
+
+      try {
+        const data = JSON.parse(text)
+        if (data.verses && Array.isArray(data.verses)) {
+          setVerses(data.verses)
+        } else {
+          console.log("No verses array in response:", data)
+          setVerses([])
+        }
+      } catch (parseError) {
+        console.error("Error parsing verses data:", parseError)
+        console.error("Response text:", text.substring(0, 200))
+        setVerses([])
+        setError("Failed to parse verses data")
       }
     } catch (error) {
       console.error("Error fetching verses:", error)
+      setVerses([])
+      setError("Network error while fetching verses")
     } finally {
       setIsLoading(false)
     }
@@ -63,15 +104,21 @@ export default function SavedVersesManager({ userId }: SavedVersesManagerProps) 
     if (!confirm("Are you sure you want to delete this verse?")) return
 
     try {
-      const response = await fetch(`/api/user/verses?userId=${userId}&verseId=${verseId}`, {
-        method: "DELETE",
-      })
+      const response = await fetch(
+        `/api/user/verses?userId=${encodeURIComponent(userId)}&verseId=${encodeURIComponent(verseId)}`,
+        {
+          method: "DELETE",
+        },
+      )
 
       if (response.ok) {
         setVerses(verses.filter((v) => v.id !== verseId))
+      } else {
+        setError("Failed to delete verse")
       }
     } catch (error) {
       console.error("Error deleting verse:", error)
+      setError("Network error while deleting verse")
     }
   }
 
@@ -82,6 +129,47 @@ export default function SavedVersesManager({ userId }: SavedVersesManagerProps) 
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-muted-foreground">Loading your saved verses...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Saved Verses</h2>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            <Plus size={16} />
+            Add Verse
+          </button>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 font-medium">Error loading verses</p>
+          <p className="text-red-600 text-sm mt-1">{error}</p>
+          <button
+            onClick={fetchVerses}
+            className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+          >
+            Try Again
+          </button>
+        </div>
+
+        {/* Add Verse Form Modal */}
+        {showAddForm && (
+          <AddVerseForm
+            userId={userId}
+            onClose={() => setShowAddForm(false)}
+            onSave={(newVerse) => {
+              setVerses([newVerse, ...verses])
+              setShowAddForm(false)
+              setError(null)
+            }}
+          />
+        )}
       </div>
     )
   }
@@ -194,6 +282,7 @@ export default function SavedVersesManager({ userId }: SavedVersesManagerProps) 
           onSave={(newVerse) => {
             setVerses([newVerse, ...verses])
             setShowAddForm(false)
+            setError(null)
           }}
         />
       )}
@@ -217,17 +306,19 @@ function AddVerseForm({ userId, onClose, onSave }: AddVerseFormProps) {
     tags: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!formData.reference || !formData.text) {
-      alert("Please fill in the reference and text fields.")
+      setError("Please fill in the reference and text fields.")
       return
     }
 
     try {
       setIsSubmitting(true)
+      setError(null)
 
       const response = await fetch("/api/user/verses", {
         method: "POST",
@@ -247,6 +338,10 @@ function AddVerseForm({ userId, onClose, onSave }: AddVerseFormProps) {
         }),
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
       const data = await response.json()
 
       if (data.success) {
@@ -256,7 +351,7 @@ function AddVerseForm({ userId, onClose, onSave }: AddVerseFormProps) {
       }
     } catch (error) {
       console.error("Error saving verse:", error)
-      alert("Failed to save verse. Please try again.")
+      setError("Failed to save verse. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -266,6 +361,12 @@ function AddVerseForm({ userId, onClose, onSave }: AddVerseFormProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-background w-full max-w-md rounded-lg shadow-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Add New Verse</h3>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

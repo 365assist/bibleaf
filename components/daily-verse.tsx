@@ -31,6 +31,13 @@ export default function DailyVerse({ userId, onSaveVerse }: DailyVerseProps) {
 
       const url = userId ? `/api/ai/daily-verse?userId=${userId}` : "/api/ai/daily-verse"
       const response = await fetch(url)
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server returned non-JSON response. Please try again.")
+      }
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -45,7 +52,11 @@ export default function DailyVerse({ userId, onSaveVerse }: DailyVerseProps) {
       })
     } catch (error) {
       console.error("Error fetching daily verse:", error)
-      setError("Failed to load daily verse")
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError("Failed to load daily verse")
+      }
     } finally {
       setIsLoading(false)
     }

@@ -184,3 +184,46 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser))
   }
 }
+
+// NextAuth.js compatible authOptions for future migration
+export const authOptions = {
+  providers: [
+    // Placeholder for future NextAuth.js integration
+    {
+      id: "demo",
+      name: "Demo Provider",
+      type: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null
+
+        const result = await AuthService.login(credentials.email, credentials.password)
+        return result.success ? result.user : null
+      },
+    },
+  ],
+  pages: {
+    signIn: "/auth/login",
+    signUp: "/auth/signup",
+  },
+  session: {
+    strategy: "jwt" as const,
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.user = user
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token.user) {
+        session.user = token.user
+      }
+      return session
+    },
+  },
+}

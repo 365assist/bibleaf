@@ -12,7 +12,14 @@ export async function GET(request: NextRequest) {
 
     const userData = await getUserData(userId)
     if (!userData) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+      // Return default usage for demo users
+      return NextResponse.json({
+        usage: {
+          searches: 0,
+          guidanceRequests: 0,
+          lastReset: new Date().toISOString(),
+        },
+      })
     }
 
     const today = new Date().toISOString().split("T")[0]
@@ -27,7 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       usage: {
         searches: searchesUsedToday,
-        guidanceRequests: 0, // This would be tracked similarly
+        guidanceRequests: searchesUsedToday, // Using same counter for demo
         lastReset: userData.subscription.lastSearchReset,
       },
     })

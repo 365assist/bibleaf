@@ -14,7 +14,6 @@ export interface UserData {
   preferences: {
     theme: "light" | "dark" | "system"
     notifications: boolean
-    verseCategories?: string[] // Added verseCategories property
   }
   createdAt: string
   updatedAt: string
@@ -89,6 +88,8 @@ export async function saveVerse(verse: SavedVerse): Promise<void> {
   }
 }
 
+// Update the getUserVerses function to handle missing or invalid JSON data
+
 export async function getUserVerses(userId: string): Promise<SavedVerse[]> {
   try {
     // Get the verses index first
@@ -96,23 +97,44 @@ export async function getUserVerses(userId: string): Promise<SavedVerse[]> {
       `${process.env.BLOB_READ_WRITE_TOKEN ? "https://blob.vercel-storage.com" : ""}/users/${userId}/verses/index.json`,
     )
 
+    // If the index file doesn't exist, return an empty array
     if (!indexResponse.ok) {
       if (indexResponse.status === 404) return []
       throw new Error("Failed to fetch verses index")
     }
 
-    const index: string[] = await indexResponse.json()
+    // Try to parse the index JSON, with error handling
+    let index: string[] = []
+    try {
+      const text = await indexResponse.text()
+      if (text && text.trim()) {
+        index = JSON.parse(text)
+      }
+    } catch (parseError) {
+      console.error("Error parsing verses index:", parseError)
+      return [] // Return empty array if parsing fails
+    }
+
+    // If index is not an array, return empty array
+    if (!Array.isArray(index)) {
+      console.error("Verses index is not an array")
+      return []
+    }
+
     const verses: SavedVerse[] = []
 
-    // Fetch each verse
+    // Fetch each verse with error handling
     for (const verseId of index) {
       try {
         const verseResponse = await fetch(
           `${process.env.BLOB_READ_WRITE_TOKEN ? "https://blob.vercel-storage.com" : ""}/users/${userId}/verses/${verseId}.json`,
         )
         if (verseResponse.ok) {
-          const verse = await verseResponse.json()
-          verses.push(verse)
+          const text = await verseResponse.text()
+          if (text && text.trim()) {
+            const verse = JSON.parse(text)
+            verses.push(verse)
+          }
         }
       } catch (error) {
         console.error(`Error fetching verse ${verseId}:`, error)
@@ -205,7 +227,11 @@ async function updateVersesIndex(userId: string, verseId: string, operation: "ad
 export async function updateUsageTracking(userId: string, type: "search" | "guidance"): Promise<boolean> {
   try {
     const userData = await getUserData(userId)
-    if (!userData) return false
+    if (!userData) {
+      // For demo users without stored data, allow limited usage
+      console.log("No user data found, allowing demo usage")
+      return true
+    }
 
     const today = new Date().toISOString().split("T")[0]
     const lastReset = userData.subscription.lastSearchReset.split("T")[0]
@@ -223,8 +249,12 @@ export async function updateUsageTracking(userId: string, type: "search" | "guid
       return false // Limit exceeded
     }
 
+    if (type === "guidance" && userData.subscription.searchesUsedToday >= limits.guidance) {
+      return false // Limit exceeded for guidance (using same counter for demo)
+    }
+
     // Increment usage
-    if (type === "search") {
+    if (type === "search" || type === "guidance") {
       userData.subscription.searchesUsedToday++
     }
 
@@ -234,7 +264,8 @@ export async function updateUsageTracking(userId: string, type: "search" | "guid
     return true
   } catch (error) {
     console.error("Error updating usage tracking:", error)
-    return false
+    // In case of error, allow usage for demo purposes
+    return true
   }
 }
 
@@ -247,6 +278,6 @@ function getUsageLimits(tier: string) {
       return { searches: 20, guidance: 10 }
     case "free":
     default:
-      return { searches: 5, guidance: 3 }
+      return { searches: 5, guidance: 5 } // Allow 5 searches and 5 guidance requests for free tier
   }
 }

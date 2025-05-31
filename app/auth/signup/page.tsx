@@ -6,7 +6,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
-import { AuthService } from "@/lib/client-auth"
+import { AuthService } from "@/lib/auth"
 
 export default function SignupPage() {
   const router = useRouter()

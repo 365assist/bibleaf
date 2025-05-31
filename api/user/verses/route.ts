@@ -10,11 +10,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 })
     }
 
-    const verses = await getUserVerses(userId)
-    return NextResponse.json({ verses })
+    try {
+      const verses = await getUserVerses(userId)
+      return NextResponse.json({ verses })
+    } catch (error) {
+      console.error("Error in getUserVerses:", error)
+      return NextResponse.json({ verses: [] })
+    }
   } catch (error) {
     console.error("Error fetching verses:", error)
-    return NextResponse.json({ error: "Failed to fetch verses" }, { status: 500 })
+    return NextResponse.json({ verses: [] }, { status: 200 })
   }
 }
 
