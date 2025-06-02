@@ -84,10 +84,15 @@ export default function PricingPage() {
                   <span className="text-muted-foreground">/{plan.interval}</span>
                 </div>
                 {plan.interval === "year" && (
-                  <Badge variant="secondary" className="mt-2">
-                    <Zap size={12} className="mr-1" />
-                    Save {annualSavings.percentage}% ({formatPrice(annualSavings.amount)})
-                  </Badge>
+                  <div className="mt-2">
+                    <Badge
+                      variant="secondary"
+                      className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    >
+                      <Zap size={12} className="mr-1" />
+                      {formatPrice(plan.price / 12)}/month
+                    </Badge>
+                  </div>
                 )}
               </CardHeader>
 
@@ -156,6 +161,7 @@ export default function PricingPage() {
                     <th className="text-center py-3 px-4">Free</th>
                     <th className="text-center py-3 px-4">Basic</th>
                     <th className="text-center py-3 px-4">Premium</th>
+                    <th className="text-center py-3 px-4">Annual</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -164,11 +170,13 @@ export default function PricingPage() {
                     <td className="text-center py-3 px-4">5/day</td>
                     <td className="text-center py-3 px-4">50/day</td>
                     <td className="text-center py-3 px-4">Unlimited</td>
+                    <td className="text-center py-3 px-4">Unlimited</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Life Guidance</td>
                     <td className="text-center py-3 px-4">3/day</td>
                     <td className="text-center py-3 px-4">25/day</td>
+                    <td className="text-center py-3 px-4">Unlimited</td>
                     <td className="text-center py-3 px-4">Unlimited</td>
                   </tr>
                   <tr className="border-b">
@@ -176,10 +184,12 @@ export default function PricingPage() {
                     <td className="text-center py-3 px-4">10</td>
                     <td className="text-center py-3 px-4">500</td>
                     <td className="text-center py-3 px-4">Unlimited</td>
+                    <td className="text-center py-3 px-4">Unlimited</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Text-to-Speech</td>
                     <td className="text-center py-3 px-4">✗</td>
+                    <td className="text-center py-3 px-4">✓</td>
                     <td className="text-center py-3 px-4">✓</td>
                     <td className="text-center py-3 px-4">✓</td>
                   </tr>
@@ -188,11 +198,20 @@ export default function PricingPage() {
                     <td className="text-center py-3 px-4">✗</td>
                     <td className="text-center py-3 px-4">✗</td>
                     <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Monthly Cost</td>
+                    <td className="text-center py-3 px-4">Free</td>
+                    <td className="text-center py-3 px-4">$4.99</td>
+                    <td className="text-center py-3 px-4">$9.99</td>
+                    <td className="text-center py-3 px-4">$10.00</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4">Priority Support</td>
                     <td className="text-center py-3 px-4">✗</td>
                     <td className="text-center py-3 px-4">✗</td>
+                    <td className="text-center py-3 px-4">✓</td>
                     <td className="text-center py-3 px-4">✓</td>
                   </tr>
                 </tbody>
