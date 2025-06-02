@@ -13,8 +13,8 @@
 3. Copy the **Secret key** (starts with `sk_test_`)
 4. Add these to your `.env.local` file:
    \`\`\`
-   STRIPE_SECRET_KEY=sk_test_your_secret_key_here
-   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+   STRIPE_SECRET_KEY=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
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_51RUrSKBiT317Uae5jhAJMMdai8imCBjOQ3VVo1XNZxzCEQdFLvdEy0yjr7txL6uOICCKipp9oLKJM98sxl9H7AMg007MMMyEPg
    \`\`\`
 
 ## 3. Create Products and Prices

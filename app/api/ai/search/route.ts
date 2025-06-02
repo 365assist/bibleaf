@@ -1,58 +1,110 @@
-import { type NextRequest, NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 import { aiService } from "@/lib/ai-service"
 import { updateUsageTracking } from "@/lib/blob-storage"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("AI Search API called")
+    console.log("=== AI Search API Route Called ===")
 
     const body = await request.json()
+    console.log("Request body:", body)
+
     const { query, userId } = body
 
-    console.log("Search request:", { query, userId })
+    console.log("Extracted query:", query)
+    console.log("Extracted userId:", userId)
 
     if (!query || !userId) {
-      console.error("Missing query or userId:", { query: !!query, userId: !!userId })
-      return NextResponse.json({ error: "Query and user ID are required" }, { status: 400 })
-    }
-
-    // Check usage limits
-    console.log("Checking usage limits for user:", userId)
-    const usageAllowed = await updateUsageTracking(userId, "search")
-    if (!usageAllowed) {
-      console.log("Usage limit exceeded for user:", userId)
-      return NextResponse.json(
+      console.error("Missing required fields:", { query: !!query, userId: !!userId })
+      return new Response(
+        JSON.stringify({
+          error: "Query and user ID are required",
+          received: { query: !!query, userId: !!userId },
+          results: [],
+        }),
         {
-          error: "Daily search limit exceeded",
-          limitExceeded: true,
-          message: "You've reached your daily search limit. Upgrade your plan for unlimited searches.",
+          status: 200,
+          headers: { "Content-Type": "application/json" },
         },
-        { status: 429 },
       )
     }
 
+    console.log("Checking usage limits for user:", userId)
+
+    // Check usage limits
+    const usageAllowed = await updateUsageTracking(userId, "search")
+    console.log("Usage allowed:", usageAllowed)
+
+    if (!usageAllowed) {
+      console.log("Usage limit exceeded for user:", userId)
+      return new Response(
+        JSON.stringify({
+          error: "Daily search limit exceeded",
+          limitExceeded: true,
+          message: "You've reached your daily search limit. Upgrade your plan for unlimited searches.",
+          results: [],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
+
+    console.log("Performing AI Bible search")
+
     // Perform AI search
-    console.log("Performing AI search for query:", query)
-    const results = await aiService.searchBible(query)
-    console.log("AI search results:", results)
+    const searchResults = await aiService.searchBible(query)
+    console.log("AI search results:", searchResults)
 
     const response = {
       success: true,
       query,
-      results,
+      results: searchResults || [],
       timestamp: new Date().toISOString(),
     }
 
     console.log("Sending response:", response)
-    return NextResponse.json(response)
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })
   } catch (error) {
     console.error("Error in AI search API:", error)
-    return NextResponse.json(
+
+    // Always return valid JSON, even for errors
+    const fallbackResults = [
       {
-        error: "Failed to perform search",
-        details: error instanceof Error ? error.message : "Unknown error",
+        reference: "John 3:16",
+        text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+        relevanceScore: 0.9,
+        context: "God's love demonstrated through Christ's sacrifice for humanity's salvation.",
       },
-      { status: 500 },
-    )
+      {
+        reference: "Romans 8:28",
+        text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.",
+        relevanceScore: 0.85,
+        context: "God's sovereign work in all circumstances for believers' ultimate good.",
+      },
+      {
+        reference: "Philippians 4:13",
+        text: "I can do all this through him who gives me strength.",
+        relevanceScore: 0.8,
+        context: "Divine empowerment for all of life's challenges through Christ.",
+      },
+    ]
+
+    const errorResponse = {
+      success: false,
+      error: "Search service temporarily unavailable",
+      fallback: true,
+      results: fallbackResults,
+      timestamp: new Date().toISOString(),
+    }
+
+    return new Response(JSON.stringify(errorResponse), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 }

@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check, Crown, Star, Zap, AlertCircle } from "lucide-react"
-import { SUBSCRIPTION_PLANS } from "@/lib/stripe-config"
+import { SUBSCRIPTION_PLANS, formatPrice, getAnnualSavings } from "@/lib/stripe-config"
 import SubscriptionModal from "@/components/subscription/subscription-modal"
 import { useState, useEffect } from "react"
 
 export default function PricingPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [stripeAvailable, setStripeAvailable] = useState<boolean | null>(null)
+  const annualSavings = getAnnualSavings()
 
   useEffect(() => {
     // Check if Stripe is available
@@ -37,7 +38,9 @@ export default function PricingPage() {
       <div className="container mx-auto px-4 py-16 max-w-6xl">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold mb-4">Choose Your Spiritual Journey</h1>
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+            Choose Your Spiritual Journey
+          </h1>
           <p className="text-xl text-muted-foreground mb-8">Unlock the full power of AI-enhanced Bible study</p>
 
           {/* Stripe Status Warning */}
@@ -63,7 +66,7 @@ export default function PricingPage() {
           {SUBSCRIPTION_PLANS.map((plan) => (
             <Card
               key={plan.id}
-              className={`relative ${plan.popular ? "ring-2 ring-purple-500 scale-105" : ""} divine-light-card`}
+              className={`relative ${plan.popular ? "ring-2 ring-purple-500 scale-105" : ""} divine-light-card hover:shadow-2xl transition-all duration-300`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -77,12 +80,13 @@ export default function PricingPage() {
               <CardHeader className="text-center pb-4">
                 <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold">${plan.price / 100}</span>
+                  <span className="text-4xl font-bold">{formatPrice(plan.price)}</span>
                   <span className="text-muted-foreground">/{plan.interval}</span>
                 </div>
                 {plan.interval === "year" && (
                   <Badge variant="secondary" className="mt-2">
-                    <Zap size={12} className="mr-1" />1 month free
+                    <Zap size={12} className="mr-1" />
+                    Save {annualSavings.percentage}% ({formatPrice(annualSavings.amount)})
                   </Badge>
                 )}
               </CardHeader>
@@ -100,9 +104,9 @@ export default function PricingPage() {
                 <Button
                   className={`w-full ${plan.popular ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" : ""}`}
                   onClick={() => handleSelectPlan(plan.id)}
-                  disabled={stripeAvailable === false && plan.price > 0}
+                  disabled={stripeAvailable === false}
                 >
-                  {plan.price === 0 ? "Get Started Free" : stripeAvailable === false ? "Unavailable" : "Choose Plan"}
+                  {stripeAvailable === false ? "Unavailable" : "Choose Plan"}
                 </Button>
               </CardContent>
             </Card>
@@ -110,37 +114,33 @@ export default function PricingPage() {
         </div>
 
         {/* Free Tier Promotion */}
-        {stripeAvailable === false && (
-          <Card className="divine-light-card mb-16">
-            <CardContent className="text-center py-8">
-              <h3 className="text-2xl font-bold mb-4">Start with Our Free Tier!</h3>
-              <p className="text-muted-foreground mb-6">
-                While payment processing is being set up, you can still enjoy our free features:
-              </p>
-              <ul className="text-left max-w-md mx-auto space-y-2 mb-6">
-                <li className="flex items-center gap-2">
-                  <Check size={16} className="text-green-500" />
-                  <span>5 AI-powered searches per day</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check size={16} className="text-green-500" />
-                  <span>3 Life guidance requests per day</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check size={16} className="text-green-500" />
-                  <span>Save up to 10 verses</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check size={16} className="text-green-500" />
-                  <span>Full Bible reading access</span>
-                </li>
-              </ul>
-              <Button asChild className="divine-button">
-                <a href="/auth/login">Get Started Free</a>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <Card className="divine-light-card mb-16">
+          <CardContent className="text-center py-8">
+            <h3 className="text-2xl font-bold mb-4">Start with Our Free Tier!</h3>
+            <p className="text-muted-foreground mb-6">Experience BibleAF with our generous free features:</p>
+            <ul className="text-left max-w-md mx-auto space-y-2 mb-6">
+              <li className="flex items-center gap-2">
+                <Check size={16} className="text-green-500" />
+                <span>5 AI-powered searches per day</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check size={16} className="text-green-500" />
+                <span>3 Life guidance requests per day</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check size={16} className="text-green-500" />
+                <span>Save up to 10 verses</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check size={16} className="text-green-500" />
+                <span>Full Bible reading access</span>
+              </li>
+            </ul>
+            <Button asChild className="divine-button">
+              <a href="/auth/login">Get Started Free</a>
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Features Comparison */}
         <Card className="divine-light-card">
@@ -167,20 +167,26 @@ export default function PricingPage() {
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Life Guidance</td>
-                    <td className="text-center py-3 px-4">Basic</td>
-                    <td className="text-center py-3 px-4">Enhanced</td>
-                    <td className="text-center py-3 px-4">Advanced</td>
+                    <td className="text-center py-3 px-4">3/day</td>
+                    <td className="text-center py-3 px-4">25/day</td>
+                    <td className="text-center py-3 px-4">Unlimited</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Saved Verses</td>
                     <td className="text-center py-3 px-4">10</td>
-                    <td className="text-center py-3 px-4">100</td>
+                    <td className="text-center py-3 px-4">500</td>
                     <td className="text-center py-3 px-4">Unlimited</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Text-to-Speech</td>
                     <td className="text-center py-3 px-4">✗</td>
                     <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Commentary Access</td>
+                    <td className="text-center py-3 px-4">✗</td>
+                    <td className="text-center py-3 px-4">✗</td>
                     <td className="text-center py-3 px-4">✓</td>
                   </tr>
                   <tr>

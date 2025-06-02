@@ -98,8 +98,9 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
       }
     }
 
-    // In a real app, you'd update the URL here
-    window.location.href = `/bible/${encodeURIComponent(newBook)}/${newChapter}`
+    // Update the current page instead of redirecting
+    window.history.pushState({}, "", `/bible/${encodeURIComponent(newBook)}/${newChapter}`)
+    window.location.reload()
   }
 
   if (loading) {

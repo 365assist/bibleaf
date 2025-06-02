@@ -141,9 +141,23 @@ export class AuthService {
         // Check if BLOB_READ_WRITE_TOKEN is available before attempting to save
         const { serverEnv } = await import("./env-server")
         if (serverEnv.BLOB_READ_WRITE_TOKEN) {
-          const { saveUserData } = await import("./blob-storage")
-          await saveUserData(developerUser.user)
-          console.log("User data saved to blob storage")
+          const { saveUserData, getUserData } = await import("./blob-storage")
+
+          // First check if user data already exists
+          const existingUserData = await getUserData(developerUser.user.id)
+
+          if (!existingUserData) {
+            // If no existing data, save the new user data
+            await saveUserData(developerUser.user)
+            console.log("User data saved to blob storage")
+          } else {
+            // If data exists but tier doesn't match, update it
+            if (existingUserData.subscription.tier !== developerUser.user.subscription.tier) {
+              existingUserData.subscription.tier = developerUser.user.subscription.tier
+              await saveUserData(existingUserData)
+              console.log("User subscription tier updated in blob storage")
+            }
+          }
         } else {
           console.log("Blob storage not configured - skipping user data initialization")
         }

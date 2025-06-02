@@ -7,13 +7,16 @@ import { useTheme } from "next-themes"
 import { AuthService } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Brain, Book, Heart, Zap, Users, Star } from "lucide-react"
+import { Brain, Book, Heart, Zap, Users, Star, Moon, Sun } from "lucide-react"
+import InteractiveDemo from "@/components/interactive-demo"
 
 export default function Home() {
   const { theme, setTheme } = useTheme()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const user = AuthService.getCurrentUser()
     setIsLoggedIn(!!user)
   }, [])
@@ -62,6 +65,41 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col">
+      {/* Header with Theme Toggle */}
+      <header className="relative z-10 p-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-2xl">
+            <span className="text-amber-600">Bible</span>
+            <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-1 rounded-lg shadow-lg">
+              AF
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Theme Toggle - Available to all users */}
+            {mounted && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+            )}
+
+            <Link href="/auth/login">
+              <Button
+                variant="outline"
+                className="border-amber-600 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
+              >
+                Login
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative flex min-h-screen items-center justify-center p-4 text-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950" />
@@ -107,6 +145,13 @@ export default function Home() {
               />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Demo Section */}
+      <section className="py-20 px-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950">
+        <div className="max-w-6xl mx-auto">
+          <InteractiveDemo />
         </div>
       </section>
 

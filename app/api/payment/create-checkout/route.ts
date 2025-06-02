@@ -1,30 +1,47 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createCheckoutSession } from "../../../../lib/stripe-server"
 import { clientEnv } from "../../../../lib/env-client"
-import { serverEnv } from "../../../../lib/env-server"
+import { serverEnv, debugServerEnv } from "../../../../lib/env-server"
 import { SUBSCRIPTION_PLANS } from "../../../../lib/stripe-config"
 
 export async function POST(request: NextRequest) {
   console.log("=== Checkout API Route Called ===")
 
   try {
-    // Check environment variables first
-    console.log("Checking environment variables...")
+    // Debug environment variables first
+    debugServerEnv()
 
-    if (!serverEnv.STRIPE_SECRET_KEY) {
-      console.error("STRIPE_SECRET_KEY is missing")
+    // Check environment variables with better error messages
+    console.log("Checking environment variables...")
+    console.log("Direct process.env.STRIPE_SECRET_KEY exists:", !!process.env.STRIPE_SECRET_KEY)
+    console.log("serverEnv.STRIPE_SECRET_KEY exists:", !!serverEnv.STRIPE_SECRET_KEY)
+
+    // Use direct process.env access as fallback
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY || serverEnv.STRIPE_SECRET_KEY
+
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY is missing from both process.env and serverEnv")
+      console.error(
+        "Available environment variables:",
+        Object.keys(process.env).filter((key) => key.includes("STRIPE")),
+      )
       return NextResponse.json(
         {
           error: "Stripe configuration error",
           message: "STRIPE_SECRET_KEY environment variable is not set",
           success: false,
+          debug: {
+            processEnvExists: !!process.env.STRIPE_SECRET_KEY,
+            serverEnvExists: !!serverEnv.STRIPE_SECRET_KEY,
+            availableStripeVars: Object.keys(process.env).filter((key) => key.includes("STRIPE")),
+          },
         },
         { status: 500 },
       )
     }
 
-    if (!serverEnv.STRIPE_SECRET_KEY.startsWith("sk_")) {
-      console.error("STRIPE_SECRET_KEY has invalid format:", serverEnv.STRIPE_SECRET_KEY.substring(0, 10))
+    if (!stripeSecretKey.startsWith("sk_")) {
+      console.error("STRIPE_SECRET_KEY has invalid format:", stripeSecretKey.substring(0, 10))
       return NextResponse.json(
         {
           error: "Stripe configuration error",

@@ -458,7 +458,9 @@ export async function updateUsageTracking(userId: string, type: "search" | "guid
       const isDeveloperAccount = userId.startsWith("dev-") || userId.startsWith("admin-") || userId.startsWith("test-")
 
       if (isDeveloperAccount) {
-        // Create default user data for developer accounts
+        // Create default user data for developer accounts with correct tier
+        const tier = userId.startsWith("test-") ? "free" : "premium"
+
         userData = {
           id: userId,
           email: userId.includes("dev")
@@ -472,7 +474,7 @@ export async function updateUsageTracking(userId: string, type: "search" | "guid
               ? "Admin Account"
               : "Test Account",
           subscription: {
-            tier: userId.includes("test") ? "free" : "premium",
+            tier: tier,
             status: "active",
             searchesUsedToday: 0,
             lastSearchReset: new Date().toISOString(),
@@ -489,7 +491,7 @@ export async function updateUsageTracking(userId: string, type: "search" | "guid
         // Try to save the new user data, but don't fail if storage is unavailable
         try {
           await saveUserData(userData)
-          console.log(`Created user data for developer account: ${userId}`)
+          console.log(`Created user data for developer account: ${userId} with tier: ${tier}`)
         } catch (error) {
           console.log("Failed to save user data to storage, using local cache only")
         }

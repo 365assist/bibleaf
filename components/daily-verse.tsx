@@ -30,28 +30,54 @@ export default function DailyVerse({ userId, onSaveVerse }: DailyVerseProps) {
       setError("")
 
       const url = userId ? `/api/ai/daily-verse?userId=${userId}` : "/api/ai/daily-verse"
-      const response = await fetch(url)
+      console.log("Fetching daily verse from:", url)
 
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type")
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned non-JSON response. Please try again.")
-      }
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      })
 
-      const data = await response.json()
+      console.log("Response status:", response.status)
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to get daily verse")
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      setVerse({
-        reference: data.verse.reference,
-        text: data.verse.text,
-        context: data.verse.context,
-        date: data.date,
-      })
+      const text = await response.text()
+      console.log("Raw response:", text)
+
+      let data
+      try {
+        data = JSON.parse(text)
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError)
+        throw new Error("Invalid JSON response from server")
+      }
+
+      if (data.verse) {
+        setVerse({
+          reference: data.verse.reference,
+          text: data.verse.text,
+          context: data.verse.context,
+          date: data.date || new Date().toISOString().split("T")[0],
+        })
+      } else {
+        throw new Error("No verse data in response")
+      }
     } catch (error) {
       console.error("Error fetching daily verse:", error)
+
+      // Set a fallback verse instead of showing error
+      setVerse({
+        reference: "Psalm 119:105",
+        text: "Your word is a lamp for my feet, a light on my path.",
+        context: "The psalmist's declaration of Scripture's guidance in life.",
+        date: new Date().toISOString().split("T")[0],
+      })
+
       if (error instanceof Error) {
         setError(error.message)
       } else {

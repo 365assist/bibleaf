@@ -58,6 +58,15 @@ export default function DashboardPage() {
           return
         }
 
+        // Ensure developer accounts have the correct tier
+        if (currentUser.id.startsWith("dev-") || currentUser.id.startsWith("admin-")) {
+          if (currentUser.subscription.tier !== "premium") {
+            console.log("Correcting developer account tier to premium")
+            currentUser.subscription.tier = "premium"
+            AuthService.updateUser(currentUser)
+          }
+        }
+
         setUser(currentUser)
 
         // Initialize search count from user data
@@ -477,6 +486,14 @@ export default function DashboardPage() {
                     <Heart size={16} className="mr-2" />
                     View Saved Verses
                   </Button>
+                  <Button
+                    className="w-full justify-start border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                    variant="outline"
+                    onClick={() => window.open("/test-cross-references", "_blank")}
+                  >
+                    <Search size={16} className="mr-2" />
+                    Test Cross-References
+                  </Button>
                   {user.subscription.tier === "free" && (
                     <Link href="/pricing" className="block">
                       <Button className="w-full justify-start bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
@@ -554,11 +571,21 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <LifeGuidance
-                  userId={user.id}
-                  onSaveVerse={handleSaveVerse}
-                  onGuidanceComplete={handleSearchComplete}
-                />
+                {user && user.id ? (
+                  <LifeGuidance
+                    userId={user.id}
+                    onSaveVerse={handleSaveVerse}
+                    onGuidanceComplete={handleSearchComplete}
+                  />
+                ) : (
+                  <div className="p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
+                    <p className="font-medium">Authentication Error</p>
+                    <p className="text-sm mt-1">Unable to load guidance. Please try logging in again.</p>
+                    <button onClick={handleLogout} className="text-sm underline mt-2 hover:no-underline">
+                      Return to login →
+                    </button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
