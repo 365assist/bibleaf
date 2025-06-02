@@ -149,8 +149,21 @@ export default function Home() {
       </section>
 
       {/* Interactive Demo Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950">
-        <div className="max-w-6xl mx-auto">
+      <section className="relative py-20 px-4 overflow-hidden">
+        {/* Background Image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url(/images/divine-sunset-mountains.png)",
+          }}
+        />
+
+        {/* Overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-900/30 via-transparent to-amber-900/30" />
+
+        {/* Content */}
+        <div className="relative z-10">
           <InteractiveDemo />
         </div>
       </section>
