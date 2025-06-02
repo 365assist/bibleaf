@@ -37,15 +37,6 @@ export default function LoginPage() {
     setIsLoading(false)
   }
 
-  const fillDemoCredentials = (type: "dev" | "admin" | "test") => {
-    const credentials = {
-      dev: { email: "dev@bibleaf.com", password: "dev2024!" },
-      admin: { email: "admin@bibleaf.com", password: "admin2024!" },
-      test: { email: "test@bibleaf.com", password: "test2024!" },
-    }
-    setFormData(credentials[type])
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950">
       {/* Background Pattern */}
@@ -228,39 +219,6 @@ export default function LoginPage() {
                   )}
                 </button>
               </form>
-
-              {/* Demo Accounts */}
-              <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-3">Demo Accounts</h3>
-                <div className="grid grid-cols-1 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fillDemoCredentials("dev")}
-                    className="text-xs px-3 py-2 bg-amber-100 dark:bg-amber-800/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors text-left"
-                  >
-                    <div className="font-medium">Developer Account</div>
-                    <div className="text-amber-600 dark:text-amber-400">dev@bibleaf.com</div>
-                  </button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fillDemoCredentials("admin")}
-                      className="text-xs px-3 py-2 bg-amber-100 dark:bg-amber-800/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors text-left"
-                    >
-                      <div className="font-medium">Admin</div>
-                      <div className="text-amber-600 dark:text-amber-400">admin@bibleaf.com</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fillDemoCredentials("test")}
-                      className="text-xs px-3 py-2 bg-amber-100 dark:bg-amber-800/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors text-left"
-                    >
-                      <div className="font-medium">Test</div>
-                      <div className="text-amber-600 dark:text-amber-400">test@bibleaf.com</div>
-                    </button>
-                  </div>
-                </div>
-              </div>
 
               {/* Sign Up Link */}
               <div className="mt-8 text-center">
