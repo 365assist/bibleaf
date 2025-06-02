@@ -39,7 +39,7 @@ export const metadata: Metadata = {
       { url: "/icons/icon-192x192.png", sizes: "167x167" },
     ],
   },
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -50,6 +50,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Meta tags for security */}
+        <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+
         {/* Service Worker Registration */}
         <script
           dangerouslySetInnerHTML={{
