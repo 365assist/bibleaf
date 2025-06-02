@@ -8,30 +8,45 @@ interface SubscriptionModalProps {
   onClose: () => void
 }
 
+type SubscriptionPlan = {
+  id: string
+  name: string
+  interval: string
+  stripePriceId: string
+}
+
+const isStripeConfiguredClient = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? true : false
+
 const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ userId, onClose }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null)
 
-  const handleSubscribe = async (planId: string) => {
-    console.log("Starting subscription process for plan:", planId)
-
-    // Special logging for annual plans
-    if (planId === "annual") {
-      console.log("Processing annual subscription")
-    }
-
-    setIsLoading(true)
-    setError(null)
-
+  const handleSubscribe = async (plan: SubscriptionPlan) => {
     try {
+      setIsLoading(true)
+      setSelectedPlan(plan)
+
+      console.log("Starting subscription for plan:", {
+        id: plan.id,
+        name: plan.name,
+        interval: plan.interval,
+        stripePriceId: plan.stripePriceId,
+      })
+
+      if (!isStripeConfiguredClient) {
+        alert("Payment system is not configured. Please contact support.")
+        return
+      }
+
       const response = await fetch("/api/payment/create-checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          planId,
-          userId,
+          planId: plan.id, // This should be "annual" for the annual plan
+          userId: userId,
           successUrl: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${window.location.origin}/payment/cancel`,
         }),
@@ -41,21 +56,36 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ userId, onClose }
       console.log("Checkout response:", data)
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP ${response.status}`)
+        throw new Error(data.error || data.message || "Failed to create checkout session")
       }
 
       if (data.url) {
         console.log("Redirecting to Stripe checkout:", data.url)
         window.location.href = data.url
       } else {
-        throw new Error("No checkout URL received")
+        throw new Error("No checkout URL returned")
       }
     } catch (error) {
-      console.error("Subscription error:", error)
-      setError(error instanceof Error ? error.message : "Failed to start subscription")
+      console.error("Error creating checkout session:", error)
+      alert(`Failed to process subscription: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setIsLoading(false)
+      setSelectedPlan(null)
     }
+  }
+
+  const monthlyPlan: SubscriptionPlan = {
+    id: "monthly",
+    name: "Monthly",
+    interval: "month",
+    stripePriceId: "price_123", // Replace with your actual Stripe price ID
+  }
+
+  const annualPlan: SubscriptionPlan = {
+    id: "annual",
+    name: "Annual",
+    interval: "year",
+    stripePriceId: "price_456", // Replace with your actual Stripe price ID
   }
 
   return (
@@ -69,14 +99,14 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ userId, onClose }
           <div className="items-center px-4 py-3">
             <button
               className="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300"
-              onClick={() => handleSubscribe("monthly")}
+              onClick={() => handleSubscribe(monthlyPlan)}
               disabled={isLoading}
             >
               {isLoading ? "Loading..." : "Subscribe Monthly"}
             </button>
             <button
               className="mt-4 px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
-              onClick={() => handleSubscribe("annual")}
+              onClick={() => handleSubscribe(annualPlan)}
               disabled={isLoading}
             >
               {isLoading ? "Loading..." : "Subscribe Annually"}

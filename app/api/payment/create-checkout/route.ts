@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       console.error(`Plan not found: ${planId}`)
       console.log(
         "Available plans:",
-        SUBSCRIPTION_PLANS.map((p) => p.id),
+        SUBSCRIPTION_PLANS.map((p) => ({ id: p.id, name: p.name, stripePriceId: p.stripePriceId })),
       )
       return NextResponse.json(
         {
@@ -114,6 +114,26 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 },
       )
+    }
+
+    console.log(`Plan found: ${plan.name} (${plan.id}) with price ID: ${plan.stripePriceId}`)
+
+    // Special handling for annual plans
+    if (plan.interval === "year") {
+      console.log("Processing annual subscription:", {
+        planId: plan.id,
+        priceId: plan.stripePriceId,
+        amount: plan.price,
+        interval: plan.interval,
+      })
+
+      // Verify the price ID format for annual plans
+      if (plan.stripePriceId !== "price_1RUrlCBiT317Uae5W9CKifrf") {
+        console.warn(
+          "Annual plan price ID mismatch. Expected: price_1RUrlCBiT317Uae5W9CKifrf, Got:",
+          plan.stripePriceId,
+        )
+      }
     }
 
     // Check if plan has price ID

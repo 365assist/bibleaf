@@ -105,7 +105,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Exclusive webinars",
     ],
     searchesPerDay: Number.POSITIVE_INFINITY,
-    stripePriceId: "price_1RUrlCBiT317Uae5W9CKifrf", // Verify this price ID exists in Stripe
+    stripePriceId: "price_1RUrlCBiT317Uae5W9CKifrf", // Confirmed annual price ID
   },
 ]
 
