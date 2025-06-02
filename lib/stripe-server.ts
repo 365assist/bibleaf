@@ -1,11 +1,11 @@
 import Stripe from "stripe"
 
 // Initialize Stripe with better error handling and debugging
-let stripe: Stripe | null = null
+let stripeInstance: Stripe | null = null
 let stripeInitialized = false
 
 function initializeStripe() {
-  if (stripeInitialized) return stripe
+  if (stripeInitialized) return stripeInstance
 
   try {
     console.log("=== Initializing Stripe ===")
@@ -21,30 +21,30 @@ function initializeStripe() {
         "Available environment variables:",
         Object.keys(process.env).filter((key) => key.includes("STRIPE")),
       )
-      stripe = null
+      stripeInstance = null
     } else if (!process.env.STRIPE_SECRET_KEY.startsWith("sk_")) {
       console.warn("❌ STRIPE_SECRET_KEY appears to be invalid (should start with 'sk_')")
       console.warn("Current key starts with:", process.env.STRIPE_SECRET_KEY.substring(0, 10))
-      stripe = null
+      stripeInstance = null
     } else {
-      stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
         apiVersion: "2023-10-16",
       })
       console.log("✅ Stripe initialized successfully")
     }
   } catch (error) {
     console.warn("❌ Failed to initialize Stripe:", error)
-    stripe = null
+    stripeInstance = null
   }
 
   stripeInitialized = true
-  return stripe
+  return stripeInstance
 }
 
 // Helper function to check if Stripe is available
 export function isStripeAvailable(): boolean {
-  const stripeInstance = initializeStripe()
-  return stripeInstance !== null
+  const stripe = initializeStripe()
+  return stripe !== null
 }
 
 // Helper function to create a checkout session
@@ -188,7 +188,7 @@ export async function createBillingPortalSession({
 }
 
 // Export stripe instance for other uses (can be null)
-export { stripe }
+export { stripeInstance }
 
 // Initialize on module load
 initializeStripe()

@@ -118,24 +118,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`Plan found: ${plan.name} (${plan.id}) with price ID: ${plan.stripePriceId}`)
 
-    // Special handling for annual plans
-    if (plan.interval === "year") {
-      console.log("Processing annual subscription:", {
-        planId: plan.id,
-        priceId: plan.stripePriceId,
-        amount: plan.price,
-        interval: plan.interval,
-      })
-
-      // Verify the price ID format for annual plans
-      if (plan.stripePriceId !== "price_1RUrlCBiT317Uae5W9CKifrf") {
-        console.warn(
-          "Annual plan price ID mismatch. Expected: price_1RUrlCBiT317Uae5W9CKifrf, Got:",
-          plan.stripePriceId,
-        )
-      }
-    }
-
     // Check if plan has price ID
     if (!plan.stripePriceId) {
       console.error(`Plan ${planId} has no price ID`)
@@ -161,8 +143,6 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       )
     }
-
-    console.log(`Plan found: ${plan.name} with price ID: ${plan.stripePriceId}`)
 
     // Special handling for annual plans
     if (plan.interval === "year") {
@@ -192,55 +172,75 @@ export async function POST(request: NextRequest) {
       priceId: plan.stripePriceId,
     })
 
-    // Create a checkout session
-    // const { url, sessionId } = await createCheckoutSession({
-    //   planId,
-    //   userId: userIdToUse,
-    //   successUrl: finalSuccessUrl,
-    //   cancelUrl: finalCancelUrl,
-    // })
-
-    const session = await stripeInstance.checkout.sessions.create({
-      mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [
+    // Check if Stripe is initialized
+    if (!stripeInstance) {
+      console.error("Stripe instance is not initialized")
+      return NextResponse.json(
         {
-          price: plan.stripePriceId,
-          quantity: 1,
+          error: "Stripe configuration error",
+          message: "Stripe is not properly initialized",
+          success: false,
         },
-      ],
-      success_url: finalSuccessUrl,
-      cancel_url: finalCancelUrl,
-      client_reference_id: userIdToUse,
-      metadata: {
-        userId: userIdToUse,
-        planId: plan.id,
-        planName: plan.name,
-        planInterval: plan.interval,
-        planPrice: plan.price.toString(),
-      },
-      allow_promotion_codes: true,
-      billing_address_collection: "required",
-      subscription_data: {
+        { status: 500 },
+      )
+    }
+
+    // Create a checkout session with proper error handling
+    try {
+      const session = await stripeInstance.checkout.sessions.create({
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: plan.stripePriceId,
+            quantity: 1,
+          },
+        ],
+        success_url: finalSuccessUrl,
+        cancel_url: finalCancelUrl,
+        client_reference_id: userIdToUse,
         metadata: {
           userId: userIdToUse,
           planId: plan.id,
+          planName: plan.name,
           planInterval: plan.interval,
+          planPrice: plan.price.toString(),
         },
-      },
-    })
+        allow_promotion_codes: true,
+        billing_address_collection: "required",
+        subscription_data: {
+          metadata: {
+            userId: userIdToUse,
+            planId: plan.id,
+            planInterval: plan.interval,
+          },
+        },
+      })
 
-    const url = session.url
-    const sessionId = session.id
+      const url = session.url
+      const sessionId = session.id
 
-    console.log("Checkout session created successfully:", { sessionId, url })
+      console.log("Checkout session created successfully:", { sessionId, url })
 
-    // Return the checkout URL
-    return NextResponse.json({
-      url,
-      sessionId,
-      success: true,
-    })
+      // Return the checkout URL
+      return NextResponse.json({
+        url,
+        sessionId,
+        success: true,
+      })
+    } catch (stripeError) {
+      console.error("Stripe checkout session creation error:", stripeError)
+
+      // Ensure we return a proper JSON response
+      return NextResponse.json(
+        {
+          error: "Stripe error",
+          message: stripeError instanceof Error ? stripeError.message : "Unknown Stripe error",
+          success: false,
+        },
+        { status: 500 },
+      )
+    }
   } catch (error) {
     console.error("=== Checkout API Error ===")
     console.error("Error type:", typeof error)
@@ -267,6 +267,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Always return a valid JSON response
     return NextResponse.json(
       {
         error: "Failed to create checkout session",

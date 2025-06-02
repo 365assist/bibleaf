@@ -14,6 +14,7 @@ interface SubscriptionModalProps {
 export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId }: SubscriptionModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   if (!isOpen) return null
 
@@ -21,11 +22,14 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
     try {
       setIsLoading(true)
       setSelectedPlan(plan)
+      setError(null)
 
       if (!isStripeConfiguredClient) {
-        alert("Payment system is not configured. Please contact support.")
+        setError("Payment system is not configured. Please contact support.")
         return
       }
+
+      console.log(`Starting subscription process for plan: ${plan.id} (${plan.name})`)
 
       const response = await fetch("/api/payment/create-checkout", {
         method: "POST",
@@ -33,28 +37,47 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          planId: plan.id, // Use plan.id instead of plan.stripePriceId
+          planId: plan.id,
           userId: userId,
           successUrl: `${window.location.origin}/dashboard?subscription=success`,
           cancelUrl: `${window.location.origin}/dashboard?subscription=canceled`,
         }),
       })
 
-      const data = await response.json()
+      // Handle non-JSON responses
+      let data
+      const contentType = response.headers.get("content-type")
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create checkout session")
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          data = await response.json()
+        } catch (jsonError) {
+          console.error("Failed to parse JSON response:", jsonError)
+          const textResponse = await response.text()
+          console.error("Raw response:", textResponse)
+          throw new Error(`Invalid JSON response: ${textResponse.substring(0, 100)}...`)
+        }
+      } else {
+        // Handle non-JSON response
+        const textResponse = await response.text()
+        console.error("Non-JSON response:", textResponse)
+        throw new Error(`Server returned non-JSON response: ${textResponse.substring(0, 100)}...`)
       }
 
-      if (data.url) {
+      if (!response.ok) {
+        throw new Error(data?.error || data?.message || `HTTP error ${response.status}`)
+      }
+
+      if (data?.url) {
         // Redirect to Stripe Checkout using the URL
+        console.log("Redirecting to Stripe checkout:", data.url)
         window.location.href = data.url
       } else {
         throw new Error("No checkout URL returned")
       }
     } catch (error) {
       console.error("Error creating checkout session:", error)
-      alert(`Failed to process subscription: ${error instanceof Error ? error.message : "Unknown error"}`)
+      setError(error instanceof Error ? error.message : "Unknown error occurred")
     } finally {
       setIsLoading(false)
       setSelectedPlan(null)
@@ -70,6 +93,14 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
             ✕
           </button>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-800 dark:text-red-200">
+              <strong>Error:</strong> {error}
+            </p>
+          </div>
+        )}
 
         {!isStripeConfiguredClient && (
           <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
