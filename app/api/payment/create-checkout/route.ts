@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createCheckoutSession } from "../../../../lib/stripe-server"
 import { clientEnv } from "../../../../lib/env-client"
 import { serverEnv, debugServerEnv } from "../../../../lib/env-server"
 import { SUBSCRIPTION_PLANS } from "../../../../lib/stripe-config"
+import { stripeInstance } from "../../../../lib/stripe-server"
 
 export async function POST(request: NextRequest) {
   console.log("=== Checkout API Route Called ===")
@@ -144,6 +144,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`Plan found: ${plan.name} with price ID: ${plan.stripePriceId}`)
 
+    // Special handling for annual plans
+    if (plan.interval === "year") {
+      console.log("Processing annual subscription:", {
+        planId: plan.id,
+        priceId: plan.stripePriceId,
+        amount: plan.price,
+        interval: plan.interval,
+      })
+    }
+
     // Use provided userId or generate a test one
     const userIdToUse = userId || `test-user-${Date.now()}`
 
@@ -163,12 +173,45 @@ export async function POST(request: NextRequest) {
     })
 
     // Create a checkout session
-    const { url, sessionId } = await createCheckoutSession({
-      planId,
-      userId: userIdToUse,
-      successUrl: finalSuccessUrl,
-      cancelUrl: finalCancelUrl,
+    // const { url, sessionId } = await createCheckoutSession({
+    //   planId,
+    //   userId: userIdToUse,
+    //   successUrl: finalSuccessUrl,
+    //   cancelUrl: finalCancelUrl,
+    // })
+
+    const session = await stripeInstance.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: plan.stripePriceId,
+          quantity: 1,
+        },
+      ],
+      success_url: finalSuccessUrl,
+      cancel_url: finalCancelUrl,
+      client_reference_id: userIdToUse,
+      metadata: {
+        userId: userIdToUse,
+        planId: plan.id,
+        planName: plan.name,
+        planInterval: plan.interval,
+        planPrice: plan.price.toString(),
+      },
+      allow_promotion_codes: true,
+      billing_address_collection: "required",
+      subscription_data: {
+        metadata: {
+          userId: userIdToUse,
+          planId: plan.id,
+          planInterval: plan.interval,
+        },
+      },
     })
+
+    const url = session.url
+    const sessionId = session.id
 
     console.log("Checkout session created successfully:", { sessionId, url })
 

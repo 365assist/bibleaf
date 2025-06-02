@@ -97,7 +97,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     interval: "year",
     features: [
       "All Premium features",
-      "2 months free (16% savings)",
+      "2 months free (17% savings)",
       "Early access to new features",
       "Downloadable study materials",
       "VIP support",
@@ -105,7 +105,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Exclusive webinars",
     ],
     searchesPerDay: Number.POSITIVE_INFINITY,
-    stripePriceId: "price_1RUrlCBiT317Uae5W9CKifrf", // Production price ID
+    stripePriceId: "price_1RUrlCBiT317Uae5W9CKifrf", // Verify this price ID exists in Stripe
   },
 ]
 
@@ -140,8 +140,8 @@ export const getPlanById = (planId: string): SubscriptionPlan | null => {
 
 // Calculate savings for annual plan
 export const getAnnualSavings = (): { amount: number; percentage: number } => {
-  const premiumMonthly = SUBSCRIPTION_PLANS.find((p) => p.id === "premium")?.price || 0
-  const annualPlan = SUBSCRIPTION_PLANS.find((p) => p.id === "annual")?.price || 0
+  const premiumMonthly = SUBSCRIPTION_PLANS.find((p) => p.id === "premium")?.price || 999
+  const annualPlan = SUBSCRIPTION_PLANS.find((p) => p.id === "annual")?.price || 9999
   const monthlyEquivalent = premiumMonthly * 12
   const savings = monthlyEquivalent - annualPlan
   const percentage = Math.round((savings / monthlyEquivalent) * 100)
