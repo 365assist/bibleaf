@@ -35,8 +35,8 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
         body: JSON.stringify({
           planId: plan.id, // Use plan.id instead of plan.stripePriceId
           userId: userId,
-          successUrl: `${window.location.origin}/dashboard?subscription=success`,
-          cancelUrl: `${window.location.origin}/dashboard?subscription=canceled`,
+          successUrl: `${window.location.origin}/dashboard/profile?subscription=success`,
+          cancelUrl: `${window.location.origin}/dashboard/profile?subscription=canceled`,
         }),
       })
 
