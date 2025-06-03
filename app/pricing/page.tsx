@@ -203,9 +203,9 @@ export default function PricingPage() {
                   <tr className="border-b">
                     <td className="py-3 px-4">Monthly Cost</td>
                     <td className="text-center py-3 px-4">Free</td>
-                    <td className="text-center py-3 px-4">$4.99</td>
-                    <td className="text-center py-3 px-4">$9.99</td>
                     <td className="text-center py-3 px-4">$10.00</td>
+                    <td className="text-center py-3 px-4">$25.00</td>
+                    <td className="text-center py-3 px-4">$10.42</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4">Priority Support</td>
