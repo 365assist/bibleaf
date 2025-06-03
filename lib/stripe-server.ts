@@ -190,5 +190,8 @@ export async function createBillingPortalSession({
 // Export stripe instance for other uses (can be null)
 export { stripeInstance }
 
+// Named export for compatibility
+export const stripe = stripeInstance
+
 // Initialize on module load
 initializeStripe()
