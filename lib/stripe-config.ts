@@ -52,7 +52,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     id: "basic",
     name: "Basic",
     description: "Essential features for daily Bible study",
-    price: 499, // $4.99/month
+    price: 1000, // $10.00/month
     interval: "month",
     features: [
       "Unlimited Bible reading",
@@ -65,7 +65,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Cross-references",
     ],
     searchesPerDay: 50,
-    stripePriceId: "price_1RUrjRBiT317Uae5TiLEGTsD", // Production price ID
+    stripePriceId: "price_1RVyfVBiT317Uae5Qya65rqk", // Updated price ID for $10/month
   },
   {
     id: "premium",
