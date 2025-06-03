@@ -31,6 +31,13 @@ interface ConversationMessage {
   timestamp: Date
 }
 
+interface DailyVerseResult {
+  reference: string
+  text: string
+  relevanceScore: number
+  context?: string
+}
+
 export class AIService {
   private apiKey: string
   private baseUrl = "https://api.deepinfra.com/v1/inference"
@@ -50,6 +57,199 @@ export class AIService {
       this.apiKey = ""
       this.isConfigured = false
     }
+  }
+
+  async getDailyVerse(preferences?: string[]): Promise<DailyVerseResult> {
+    console.log(`=== AI Service: Daily verse request ===`)
+    console.log(`Preferences: ${preferences}`)
+
+    // Try OpenAI first
+    try {
+      console.log("Trying OpenAI for daily verse...")
+      const openaiVerse = await openaiService.getDailyVerse(preferences)
+      if (openaiVerse && openaiVerse.reference) {
+        console.log("OpenAI daily verse successful")
+        return openaiVerse
+      }
+      console.log("OpenAI daily verse failed or returned empty result")
+    } catch (error) {
+      console.log("OpenAI daily verse failed, trying Deep Infra:", error)
+    }
+
+    // Try Deep Infra as fallback
+    if (this.isConfigured) {
+      try {
+        console.log("Trying Deep Infra for daily verse...")
+
+        const preferencesText =
+          preferences && preferences.length > 0 ? `User preferences: ${preferences.join(", ")}. ` : ""
+
+        const response = await fetch(`${this.baseUrl}/meta-llama/Llama-2-70b-chat-hf`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify({
+            input: `You are a wise biblical scholar selecting an inspiring daily verse. ${preferencesText}Select a meaningful Bible verse for today's encouragement.
+
+Respond in this JSON format:
+{
+  "reference": "Book Chapter:Verse",
+  "text": "Complete verse text (ESV or NIV)",
+  "relevanceScore": 0.95,
+  "context": "Brief explanation of why this verse is meaningful for today (1-2 sentences)"
+}
+
+Choose a verse that offers hope, encouragement, or wisdom for daily life.`,
+            max_new_tokens: 500,
+            temperature: 0.3,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const aiResponse = data.results?.[0]?.generated_text
+
+          if (aiResponse) {
+            const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+            if (jsonMatch) {
+              try {
+                const result = JSON.parse(jsonMatch[0])
+                console.log("Deep Infra daily verse successful")
+                return {
+                  reference: result.reference,
+                  text: result.text,
+                  relevanceScore: result.relevanceScore || 0.9,
+                  context: result.context,
+                }
+              } catch (parseError) {
+                console.error("Error parsing Deep Infra daily verse response:", parseError)
+              }
+            }
+          }
+        } else {
+          console.error("Deep Infra API error:", response.status, response.statusText)
+        }
+      } catch (error) {
+        console.error("Error in Deep Infra daily verse:", error)
+      }
+    }
+
+    // Fallback to intelligent daily verse selection
+    console.log("Using intelligent fallback daily verse")
+    return this.getIntelligentDailyVerse(preferences)
+  }
+
+  private getIntelligentDailyVerse(preferences?: string[]): DailyVerseResult {
+    console.log("=== Using intelligent daily verse selection ===")
+
+    // Curated collection of inspiring daily verses
+    const dailyVerses = [
+      {
+        reference: "Psalm 118:24",
+        text: "This is the day the Lord has made; let us rejoice and be glad in it.",
+        relevanceScore: 1.0,
+        context: "A reminder to find joy and gratitude in each new day that God has given us.",
+      },
+      {
+        reference: "Jeremiah 29:11",
+        text: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, to give you hope and a future.",
+        relevanceScore: 1.0,
+        context: "God has good plans for our lives, giving us hope and a future filled with His purposes.",
+      },
+      {
+        reference: "Philippians 4:13",
+        text: "I can do all this through him who gives me strength.",
+        relevanceScore: 1.0,
+        context: "Through Christ's strength, we can face any challenge or situation that comes our way.",
+      },
+      {
+        reference: "Isaiah 40:31",
+        text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.",
+        relevanceScore: 1.0,
+        context: "God provides renewed strength to those who put their hope and trust in Him.",
+      },
+      {
+        reference: "Proverbs 3:5-6",
+        text: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+        relevanceScore: 1.0,
+        context: "When we trust God completely and acknowledge Him in all our decisions, He guides our path.",
+      },
+      {
+        reference: "Romans 8:28",
+        text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.",
+        relevanceScore: 1.0,
+        context: "Even in difficult circumstances, God is working everything together for our ultimate good.",
+      },
+      {
+        reference: "Lamentations 3:22-23",
+        text: "Because of the Lord's great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness.",
+        relevanceScore: 1.0,
+        context: "God's mercy and faithfulness are renewed each morning, giving us hope for each new day.",
+      },
+      {
+        reference: "Matthew 6:26",
+        text: "Look at the birds of the air; they do not sow or reap or store away in barns, and yet your heavenly Father feeds them. Are you not much more valuable than they?",
+        relevanceScore: 1.0,
+        context: "God cares for all His creation, and we are precious to Him - He will provide for our needs.",
+      },
+      {
+        reference: "Psalm 46:1",
+        text: "God is our refuge and strength, an ever-present help in trouble.",
+        relevanceScore: 1.0,
+        context: "In times of difficulty or uncertainty, God is our safe place and source of strength.",
+      },
+      {
+        reference: "John 14:27",
+        text: "Peace I leave with you; my peace I give you. I do not give to you as the world gives. Do not let your hearts be troubled and do not be afraid.",
+        relevanceScore: 1.0,
+        context: "Jesus offers us a supernatural peace that surpasses understanding and calms our fears.",
+      },
+      {
+        reference: "1 Peter 5:7",
+        text: "Cast all your anxiety on him because he cares for you.",
+        relevanceScore: 1.0,
+        context: "We can bring all our worries and concerns to God because He genuinely cares about us.",
+      },
+      {
+        reference: "Ephesians 2:10",
+        text: "For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do.",
+        relevanceScore: 1.0,
+        context: "We are God's masterpiece, created with purpose and designed to make a difference in the world.",
+      },
+    ]
+
+    // Select verse based on day of year for variety, but with some randomness
+    const today = new Date()
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000)
+
+    // Add some preference-based selection if provided
+    let selectedVerses = dailyVerses
+    if (preferences && preferences.length > 0) {
+      const preferenceKeywords = preferences.join(" ").toLowerCase()
+
+      // Filter verses that might match preferences
+      const matchingVerses = dailyVerses.filter((verse) => {
+        const verseContent = (verse.text + " " + verse.context).toLowerCase()
+        return preferences.some(
+          (pref) =>
+            verseContent.includes(pref.toLowerCase()) ||
+            (pref.toLowerCase().includes("hope") && verseContent.includes("hope")) ||
+            (pref.toLowerCase().includes("strength") && verseContent.includes("strength")) ||
+            (pref.toLowerCase().includes("peace") && verseContent.includes("peace")),
+        )
+      })
+
+      if (matchingVerses.length > 0) {
+        selectedVerses = matchingVerses
+      }
+    }
+
+    const selectedVerse = selectedVerses[dayOfYear % selectedVerses.length]
+    console.log(`Selected verse: ${selectedVerse.reference}`)
+
+    return selectedVerse
   }
 
   async getConversationalGuidance(
