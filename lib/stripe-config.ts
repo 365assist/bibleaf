@@ -34,7 +34,7 @@ export const stripeConfig = {
   },
 }
 
-// Subscription plans with updated annual pricing
+// Subscription plans with updated premium pricing
 export interface SubscriptionPlan {
   id: string
   name: string
@@ -71,7 +71,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     id: "premium",
     name: "Premium",
     description: "Advanced features for deeper spiritual growth",
-    price: 999, // $9.99/month
+    price: 2500, // $25.00/month
     interval: "month",
     features: [
       "All Basic features",
@@ -86,18 +86,18 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Export study notes",
     ],
     searchesPerDay: Number.POSITIVE_INFINITY,
-    stripePriceId: "price_1RUrkHBiT317Uae5OtdFxSdn", // Production price ID
+    stripePriceId: "price_1RVyFZBiT317Uae5inarwN6d", // Updated premium price ID for $25/month
     popular: true,
   },
   {
     id: "annual",
     name: "Annual Premium",
-    description: "Best value - save $5 per year!",
+    description: "Best value - save $175 per year!",
     price: 12500, // $125.00/year (equivalent to $10.42/month)
     interval: "year",
     features: [
       "All Premium features",
-      "Save $5 compared to monthly billing",
+      "Save $175 compared to monthly billing",
       "Early access to new features",
       "Downloadable study materials",
       "VIP support",
@@ -105,7 +105,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Exclusive webinars",
     ],
     searchesPerDay: Number.POSITIVE_INFINITY,
-    stripePriceId: "price_1RVxMuBiT317Uae5cW1AaVPT", // Updated annual price ID for $125/year
+    stripePriceId: "price_1RVxMuBiT317Uae5cW1AaVPT", // Annual price ID for $125/year
   },
 ]
 
@@ -140,7 +140,7 @@ export const getPlanById = (planId: string): SubscriptionPlan | null => {
 
 // Calculate savings for annual plan
 export const getAnnualSavings = (): { amount: number; percentage: number } => {
-  const premiumMonthly = SUBSCRIPTION_PLANS.find((p) => p.id === "premium")?.price || 999
+  const premiumMonthly = SUBSCRIPTION_PLANS.find((p) => p.id === "premium")?.price || 2500
   const annualPlan = SUBSCRIPTION_PLANS.find((p) => p.id === "annual")?.price || 12500
   const monthlyEquivalent = premiumMonthly * 12
   const savings = monthlyEquivalent - annualPlan
