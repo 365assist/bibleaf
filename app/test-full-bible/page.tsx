@@ -114,27 +114,32 @@ export default function TestFullBiblePage() {
     if (!selectedBook || !selectedChapter) return
 
     setLoading(true)
+    setError(null)
     try {
-      const response = await fetch("/api/bible/chapter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          translation: selectedTranslation,
-          book: selectedBook,
-          chapter: selectedChapter,
-        }),
-      })
+      // Use GET request with query parameters instead of POST
+      const url = `/api/bible/chapter?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}&translation=${selectedTranslation}`
+      const response = await fetch(url)
 
-      if (!response.ok) throw new Error(`Failed to load chapter: ${response.status}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Failed to load chapter: ${response.status}`)
+      }
 
       const data = await response.json()
-      if (data.success && data.chapter) {
-        setChapter(data.chapter)
+      if (data.success && data.verses) {
+        setChapter({
+          book: data.book,
+          chapter: data.chapter,
+          verses: data.verses,
+          translation: data.translation,
+        })
       } else {
         setChapter(null)
+        setError(data.error || "Chapter not found")
       }
     } catch (err) {
       console.error("Error loading chapter:", err)
+      setError(err instanceof Error ? err.message : "Failed to load chapter")
       setChapter(null)
     } finally {
       setLoading(false)
@@ -228,6 +233,9 @@ export default function TestFullBiblePage() {
           <Card className="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
             <CardContent className="pt-6">
               <p className="text-red-600 dark:text-red-400">{error}</p>
+              <Button onClick={() => setError(null)} variant="outline" size="sm" className="mt-2">
+                Dismiss
+              </Button>
             </CardContent>
           </Card>
         )}
