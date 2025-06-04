@@ -103,37 +103,67 @@ export default function LifeGuidance({ userId, onSaveVerse, onGuidanceComplete }
         data = JSON.parse(responseText)
       } catch (parseError) {
         console.error("JSON parse error:", parseError)
-        console.error("Response text:", responseText)
+        console.error("Response text:", responseText.substring(0, 500))
 
-        // Provide fallback guidance if JSON parsing fails
-        data = {
-          success: true,
-          guidance:
-            "I apologize, but I'm having trouble processing your request right now. However, I want to encourage you that God is always with you in every situation. His love never fails, and He promises to guide those who seek Him.",
-          verses: [
-            {
-              reference: "Psalm 23:4",
-              text: "Even though I walk through the darkest valley, I will fear no evil, for you are with me; your rod and your staff, they comfort me.",
-              relevanceScore: 95,
-              context: "God's presence provides comfort and guidance in difficult times.",
-            },
-            {
-              reference: "James 1:5",
-              text: "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you.",
-              relevanceScore: 90,
-              context: "God promises to give wisdom to those who ask for it.",
-            },
-          ],
-          practicalSteps: [
-            "Spend time in prayer, asking God for wisdom and guidance",
-            "Read Scripture to gain God's perspective on your situation",
-            "Seek counsel from trusted Christian friends or mentors",
-            "Trust that God will make His will clear as you seek Him",
-          ],
-          prayerSuggestion:
-            "Lord, I need Your wisdom and guidance in this situation. Help me to trust in Your perfect plan and timing. Give me peace as I wait on You. Amen.",
-          fallback: true,
-          error: "Service temporarily unavailable",
+        // Check if response looks like an HTML error page
+        if (responseText.includes("<html>") || responseText.includes("<!DOCTYPE")) {
+          console.error("Received HTML instead of JSON - likely a server error")
+
+          // Provide fallback guidance for HTML error responses
+          data = {
+            success: true,
+            fallback: true,
+            error: "Server temporarily unavailable",
+            guidance:
+              "I apologize, but I'm having trouble processing your request right now. However, I want to encourage you that God is always with you in every situation. His love never fails, and He promises to guide those who seek Him.",
+            verses: [
+              {
+                reference: "Psalm 46:1",
+                text: "God is our refuge and strength, an ever-present help in trouble.",
+                relevanceScore: 95,
+                context: "God is always available to help us in times of need.",
+              },
+              {
+                reference: "Proverbs 3:5-6",
+                text: "Trust in the LORD with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+                relevanceScore: 90,
+                context: "Trusting God completely leads to clear guidance.",
+              },
+            ],
+            practicalSteps: [
+              "Spend time in prayer, asking God for wisdom and guidance",
+              "Read Scripture to gain God's perspective on your situation",
+              "Seek counsel from trusted Christian friends or mentors",
+              "Trust that God will make His will clear as you seek Him",
+            ],
+            prayerSuggestion:
+              "Lord, I need Your wisdom and guidance in this situation. Help me to trust in Your perfect plan and timing. Give me peace as I wait on You. Amen.",
+          }
+        } else {
+          // For other parsing errors, provide a different fallback
+          data = {
+            success: true,
+            fallback: true,
+            error: "Response format error",
+            guidance:
+              "While I'm experiencing technical difficulties, I want to remind you that God's wisdom and guidance are always available through His Word and prayer.",
+            verses: [
+              {
+                reference: "James 1:5",
+                text: "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you.",
+                relevanceScore: 95,
+                context: "God promises to give wisdom to those who ask for it.",
+              },
+            ],
+            practicalSteps: [
+              "Pray about your situation and ask for God's wisdom",
+              "Study relevant Bible passages for guidance",
+              "Seek advice from mature Christian mentors",
+              "Take time to listen for God's leading",
+            ],
+            prayerSuggestion:
+              "Father, I trust in Your wisdom and timing. Help me to seek Your will above my own and to find peace in Your presence. Amen.",
+          }
         }
       }
 
