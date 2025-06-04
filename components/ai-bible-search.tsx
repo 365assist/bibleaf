@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Search, Loader2, BookOpen, Heart, Sparkles } from "lucide-react"
+import { Search, Loader2, BookOpen, Heart, Sparkles, Database } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import VerseContextViewer from "./verse-context-viewer"
@@ -159,6 +159,17 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
       ]
     }
 
+    if (queryLower.includes("psalm23") || queryLower.includes("psalms23")) {
+      return [
+        {
+          reference: "Psalm 23:1",
+          text: "The Lord is my shepherd, I lack nothing.",
+          relevanceScore: 1.0,
+          context: "The beloved shepherd psalm, expressing trust and confidence in God's care and provision.",
+        },
+      ]
+    }
+
     // Handle thematic searches
     if (queryLower.includes("love")) {
       return [
@@ -174,6 +185,12 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
           relevanceScore: 0.9,
           context: "John declares that love is not just an attribute of God, but His very essence.",
         },
+        {
+          reference: "1 Corinthians 13:4",
+          text: "Love is patient, love is kind. It does not envy, it does not boast, it is not proud.",
+          relevanceScore: 0.85,
+          context: "Paul's famous description of love's characteristics in the 'love chapter'.",
+        },
       ]
     }
 
@@ -184,6 +201,46 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
           text: "Now faith is confidence in what we hope for and assurance about what we do not see.",
           relevanceScore: 0.9,
           context: "The biblical definition of faith as confident trust in God's promises.",
+        },
+        {
+          reference: "Romans 10:17",
+          text: "Consequently, faith comes from hearing the message, and the message is heard through the word about Christ.",
+          relevanceScore: 0.85,
+          context: "Paul explains how faith develops through hearing God's word.",
+        },
+      ]
+    }
+
+    if (queryLower.includes("hope")) {
+      return [
+        {
+          reference: "Jeremiah 29:11",
+          text: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, to give you hope and a future.",
+          relevanceScore: 0.9,
+          context: "God's promise of hope and future to the exiled Israelites, often applied to believers today.",
+        },
+        {
+          reference: "Romans 15:13",
+          text: "May the God of hope fill you with all joy and peace as you trust in him, so that you may overflow with hope by the power of the Holy Spirit.",
+          relevanceScore: 0.85,
+          context: "Paul's prayer for believers to be filled with hope through God's power.",
+        },
+      ]
+    }
+
+    if (queryLower.includes("strength") || queryLower.includes("strong")) {
+      return [
+        {
+          reference: "Philippians 4:13",
+          text: "I can do all this through him who gives me strength.",
+          relevanceScore: 0.9,
+          context: "Paul's declaration of finding strength through Christ in all circumstances.",
+        },
+        {
+          reference: "Isaiah 40:31",
+          text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.",
+          relevanceScore: 0.85,
+          context: "Isaiah's promise of renewed strength for those who trust in the Lord.",
         },
       ]
     }
@@ -201,6 +258,12 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
         text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.",
         relevanceScore: 0.8,
         context: "God sovereignly works all circumstances for the ultimate good of believers.",
+      },
+      {
+        reference: "Proverbs 3:5-6",
+        text: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+        relevanceScore: 0.75,
+        context: "Solomon's wisdom about trusting God rather than our own understanding.",
       },
     ]
   }
@@ -252,7 +315,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
             <div className="space-y-4">
               <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                 Experience the Bible like never before. Our AI understands your questions and finds the perfect verses
-                with deep theological context.
+                with deep theological context from our local Bible database.
               </p>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -265,8 +328,8 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
                   <span>AI-Powered Insights</span>
                 </div>
                 <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                  <Heart className="w-4 h-4" />
-                  <span>Contextual Guidance</span>
+                  <Database className="w-4 h-4" />
+                  <span>Local Storage</span>
                 </div>
                 <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                   <Search className="w-4 h-4" />
@@ -366,6 +429,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
                   <option value="NASB">NASB</option>
                   <option value="NLT">NLT</option>
                   <option value="CSB">CSB</option>
+                  <option value="WEB">World English</option>
                 </select>
               </div>
 
@@ -431,6 +495,17 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
         )}
       </div>
 
+      {/* Local Storage Notice */}
+      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-800/50 shadow-lg">
+        <p className="font-medium flex items-center gap-2">
+          <Database className="h-4 w-4" />
+          Powered by Local Bible Storage
+        </p>
+        <p className="text-sm mt-1">
+          Fast, reliable Bible search using locally stored translations. No external API dependencies.
+        </p>
+      </div>
+
       {/* Error Message */}
       {error && (
         <div className="p-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-xl border border-red-200 dark:border-red-800/50 shadow-lg">
@@ -460,7 +535,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
             Using basic search results
           </p>
           <p className="text-sm mt-1">
-            Our AI search is temporarily unavailable. We've provided relevant verses based on your query.
+            Our AI search is temporarily unavailable. We've provided relevant verses from our local database.
           </p>
         </div>
       )}
@@ -505,6 +580,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
                     <option value="NASB">NASB</option>
                     <option value="NLT">NLT</option>
                     <option value="CSB">CSB</option>
+                    <option value="WEB">World English</option>
                   </select>
                   <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full font-medium">
                     {Math.round(result.relevanceScore * 100)}% match
@@ -609,6 +685,9 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
               "verses for strength",
               "biblical wisdom about relationships",
               "scriptures about faith",
+              "God's promises",
+              "verses about peace",
+              "biblical encouragement",
             ].map((example) => (
               <button
                 key={example}
