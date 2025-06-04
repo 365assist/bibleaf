@@ -363,7 +363,7 @@ class FullBibleDownloader {
     }
 
     console.log("\n🎉 Your Bible app now has complete Bible translations!")
-    console.log("🔗 Test at: /test-blob-bible")
+    console.log("🔗 Test at: /test-full-bible")
     console.log("=".repeat(60))
   }
 
@@ -404,4 +404,4 @@ console.log("⏱️  This may take a few minutes to download and process all tra
 await downloader.downloadAndUploadAllBibles()
 
 console.log("\n✨ Full Bible download complete!")
-console.log("🔗 Visit /test-blob-bible to see your complete Bible database!")
+console.log("🔗 Visit /test-full-bible to see your complete Bible database!")
