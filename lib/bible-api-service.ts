@@ -1,4 +1,4 @@
-// Bible API service for integrating with Bible Gateway and YouVersion
+// Bible API service for integrating with YouVersion and local Bible data
 interface BibleVerse {
   verse: number
   text: string
@@ -25,59 +25,34 @@ interface BibleTranslation {
   name: string
   abbreviation: string
   language: string
-  provider: "bible-gateway" | "youversion"
+  provider: "youversion" | "local"
 }
 
 export class BibleAPIService {
   private isConfigured: boolean
 
   constructor() {
-    // Check if any Bible API is configured
-    this.isConfigured = !!process.env.BIBLE_GATEWAY_API_KEY || !!process.env.YOUVERSION_API_KEY
+    // Check if YouVersion API is configured
+    this.isConfigured = !!process.env.YOUVERSION_API_KEY
 
     if (!this.isConfigured) {
-      console.warn("No Bible API keys configured. Some Bible features may be limited.")
+      console.warn("No Bible API keys configured. Using local Bible data only.")
     }
   }
 
   // Get available translations
   getAvailableTranslations(): BibleTranslation[] {
     return [
-      // Bible Gateway (via web scraping - be careful with rate limits)
-      { id: "niv", name: "New International Version", abbreviation: "NIV", language: "en", provider: "bible-gateway" },
-      { id: "kjv", name: "King James Version", abbreviation: "KJV", language: "en", provider: "bible-gateway" },
-      {
-        id: "nasb",
-        name: "New American Standard Bible",
-        abbreviation: "NASB",
-        language: "en",
-        provider: "bible-gateway",
-      },
-      { id: "nlt", name: "New Living Translation", abbreviation: "NLT", language: "en", provider: "bible-gateway" },
-      { id: "csb", name: "Christian Standard Bible", abbreviation: "CSB", language: "en", provider: "bible-gateway" },
+      // Local translations (from blob storage)
+      { id: "kjv", name: "King James Version", abbreviation: "KJV", language: "en", provider: "local" },
+      { id: "niv", name: "New International Version", abbreviation: "NIV", language: "en", provider: "local" },
+      { id: "nasb", name: "New American Standard Bible", abbreviation: "NASB", language: "en", provider: "local" },
+      { id: "nlt", name: "New Living Translation", abbreviation: "NLT", language: "en", provider: "local" },
+      { id: "csb", name: "Christian Standard Bible", abbreviation: "CSB", language: "en", provider: "local" },
 
       // YouVersion API (requires partnership)
       { id: "youversion-niv", name: "NIV (YouVersion)", abbreviation: "NIV", language: "en", provider: "youversion" },
     ]
-  }
-
-  // Bible Gateway integration (web scraping approach)
-  async getBibleGatewayChapter(book: string, chapter: number, translation = "NIV"): Promise<BibleChapter | null> {
-    try {
-      // Note: This is a simplified example. In production, you'd want to use their official API
-      // or implement proper web scraping with rate limiting and error handling
-
-      const passage = `${book} ${chapter}`
-      const url = `https://www.biblegateway.com/passage/?search=${encodeURIComponent(passage)}&version=${translation}`
-
-      // For now, return null and use fallback
-      // In production, you'd implement proper scraping or use their API
-      console.log(`Would fetch from Bible Gateway: ${url}`)
-      return null
-    } catch (error) {
-      console.error("Error fetching from Bible Gateway:", error)
-      return null
-    }
   }
 
   // YouVersion API integration (requires partnership)
@@ -95,29 +70,23 @@ export class BibleAPIService {
   }
 
   // Main method to get chapter from any available source
-  async getChapter(book: string, chapter: number, translation = "NIV"): Promise<BibleChapter | null> {
+  async getChapter(book: string, chapter: number, translation = "KJV"): Promise<BibleChapter | null> {
     console.log(`Fetching ${book} ${chapter} in ${translation}`)
 
-    // Try Bible Gateway for translations
-    if (["NIV", "KJV", "NASB", "NLT", "CSB"].includes(translation.toUpperCase())) {
-      const bgResult = await this.getBibleGatewayChapter(book, chapter, translation)
-      if (bgResult) {
-        return bgResult
+    // Try YouVersion API if configured
+    if (this.isConfigured) {
+      const yvResult = await this.getYouVersionChapter(book, chapter)
+      if (yvResult) {
+        return yvResult
       }
     }
 
-    // Try YouVersion as fallback
-    const yvResult = await this.getYouVersionChapter(book, chapter)
-    if (yvResult) {
-      return yvResult
-    }
-
-    // Return fallback data if all APIs fail
+    // Return fallback data if APIs fail
     return this.getFallbackChapter(book, chapter, translation)
   }
 
   // Search across available APIs
-  async searchBible(query: string, translation = "NIV", limit = 10): Promise<BibleSearchResult[]> {
+  async searchBible(query: string, translation = "KJV", limit = 10): Promise<BibleSearchResult[]> {
     const results: BibleSearchResult[] = []
 
     // Add API searches here when available
@@ -168,7 +137,7 @@ export class BibleAPIService {
       for (let i = 1; i <= 10; i++) {
         fallbackVerses.push({
           verse: i,
-          text: `This is verse ${i} of ${book} chapter ${chapter}. In a production app, this would contain the actual Bible text from an API like Bible Gateway or YouVersion.`,
+          text: `This is verse ${i} of ${book} chapter ${chapter}. In a production app, this would contain the actual Bible text from local storage or YouVersion API.`,
         })
       }
     }
@@ -177,12 +146,12 @@ export class BibleAPIService {
       book,
       chapter,
       verses: fallbackVerses,
-      translation: translation || "NIV",
+      translation: translation || "KJV",
     }
   }
 
   // Get verse by reference (e.g., "John 3:16")
-  async getVerse(reference: string, translation = "NIV"): Promise<BibleSearchResult | null> {
+  async getVerse(reference: string, translation = "KJV"): Promise<BibleSearchResult | null> {
     const parsed = this.parseReference(reference)
     if (!parsed) {
       return null
@@ -209,7 +178,7 @@ export class BibleAPIService {
   }
 
   // Get multiple verses by references
-  async getVerses(references: string[], translation = "NIV"): Promise<BibleSearchResult[]> {
+  async getVerses(references: string[], translation = "KJV"): Promise<BibleSearchResult[]> {
     const results: BibleSearchResult[] = []
 
     for (const reference of references) {
@@ -223,7 +192,7 @@ export class BibleAPIService {
   }
 
   // Get daily verse (random selection from curated list)
-  async getDailyVerse(translation = "NIV"): Promise<BibleSearchResult | null> {
+  async getDailyVerse(translation = "KJV"): Promise<BibleSearchResult | null> {
     const popularVerses = [
       "John 3:16",
       "Romans 8:28",

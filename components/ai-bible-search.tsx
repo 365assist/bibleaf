@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Search, Loader2, BookOpen, Heart, Sparkles } from 'lucide-react'
+import { Search, Loader2, BookOpen, Heart, Sparkles } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import VerseContextViewer from "./verse-context-viewer"
@@ -29,21 +29,16 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
   const [limitExceeded, setLimitExceeded] = useState(false)
   const [isFallback, setIsFallback] = useState(false)
 
-  // Update the default translation from ESV to KJV or NIV
   const [searchFilters, setSearchFilters] = useState({
     testament: "all", // 'all', 'old', 'new'
     books: [] as string[],
-    translation: "NIV",
+    translation: "KJV",
     sortBy: "relevance", // 'relevance', 'biblical'
   })
   const [showFilters, setShowFilters] = useState(false)
   const [crossReferences, setCrossReferences] = useState<SearchResult[]>([])
   const [showContextViewer, setShowContextViewer] = useState<string | null>(null)
 
-  // Remove this line:
-  // const [retryCount, setRetryCount] = useState(0)
-
-  // Modify the handleSearch function to include retry logic
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -58,7 +53,6 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
 
       console.log("Starting search for:", query.trim())
 
-      // Use a try-catch block for the fetch operation itself
       let response
       try {
         response = await fetch("/api/ai/search", {
@@ -74,7 +68,6 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
         })
       } catch (fetchError) {
         console.error("Network error during fetch:", fetchError)
-        // Use fallback results immediately on network error
         setIsFallback(true)
         setResults(getFallbackResults(query.trim()))
         return
@@ -82,7 +75,6 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
 
       console.log("Response status:", response.status)
 
-      // Always try to parse as JSON first
       let data
       try {
         const responseText = await response.text()
@@ -95,7 +87,6 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
         data = JSON.parse(responseText)
       } catch (parseError) {
         console.error("Failed to parse response:", parseError)
-        // Use fallback results instead of throwing
         setIsFallback(true)
         setResults(getFallbackResults(query.trim()))
         return
@@ -103,43 +94,36 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
 
       console.log("Parsed response data:", data)
 
-      // Handle API errors (even with 200 status)
       if (!data.success) {
         if (data.limitExceeded) {
           setLimitExceeded(true)
           setError(data.message || "Daily search limit exceeded")
         } else {
-          // Use fallback on API error
           setIsFallback(true)
           setResults(getFallbackResults(query.trim()))
         }
         return
       }
 
-      // Handle successful response
       if (data.results && Array.isArray(data.results) && data.results.length > 0) {
         console.log("Setting results:", data.results.length, "verses found")
         setResults(data.results)
 
-        // Show fallback notice if applicable
         if (data.fallback) {
           console.log("Using fallback results due to AI service unavailability")
           setIsFallback(true)
         }
 
-        // Notify parent component that search was completed successfully
         if (onSearchComplete) {
           onSearchComplete()
         }
       } else {
-        // No results from API, use fallback
         console.log("No results from API, using fallback")
         setIsFallback(true)
         setResults(getFallbackResults(query.trim()))
       }
     } catch (error) {
       console.error("Search error:", error)
-      // Use fallback results on any error
       setIsFallback(true)
       setResults(getFallbackResults(query.trim()))
     } finally {
@@ -232,12 +216,10 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
 
   const handleExampleSearch = (exampleQuery: string) => {
     setQuery(exampleQuery)
-    // Reset states before search
     setResults([])
     setError("")
     setIsFallback(false)
 
-    // Trigger search with a small delay to ensure state is updated
     setTimeout(() => {
       const fakeEvent = {
         preventDefault: () => {},
@@ -379,11 +361,11 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
                   onChange={(e) => setSearchFilters((prev) => ({ ...prev, translation: e.target.value }))}
                   className="w-full p-2 border rounded-lg"
                 >
-                  <option value="NIV">NIV</option>
-                  <option value="ESV">ESV</option>
                   <option value="KJV">King James</option>
+                  <option value="NIV">NIV</option>
                   <option value="NASB">NASB</option>
                   <option value="NLT">NLT</option>
+                  <option value="CSB">CSB</option>
                 </select>
               </div>
 
@@ -518,11 +500,11 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
                     className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-1 rounded border-0"
                     defaultValue={searchFilters.translation}
                   >
-                    <option value="NIV">NIV</option>
-                    <option value="ESV">ESV</option>
                     <option value="KJV">King James</option>
+                    <option value="NIV">NIV</option>
                     <option value="NASB">NASB</option>
                     <option value="NLT">NLT</option>
+                    <option value="CSB">CSB</option>
                   </select>
                   <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full font-medium">
                     {Math.round(result.relevanceScore * 100)}% match
@@ -554,7 +536,6 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
                   Related Verses
                 </h5>
                 <div className="space-y-2">
-                  {/* This would be populated by AI cross-reference lookup */}
                   <div className="text-sm text-blue-700 dark:text-blue-400">
                     <span className="font-medium">Romans 8:28</span> - "And we know that in all things God works for the
                     good..."
