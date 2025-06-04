@@ -142,37 +142,64 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-        <span className="ml-2">Loading chapter...</span>
-      </div>
-    )
-  }
-
   if (error) {
     return (
       <div className="p-6 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
         <div className="flex items-center gap-2 mb-2">
           <AlertCircle size={20} />
-          <p className="font-medium">Error Loading Chapter</p>
+          <p className="font-medium">Chapter Not Available</p>
         </div>
         <p className="text-sm mt-1">{error}</p>
-        <div className="mt-4 space-y-2">
-          <button
-            onClick={fetchChapter}
-            className="text-sm underline hover:no-underline bg-destructive/20 px-3 py-1 rounded"
-          >
-            Try again
-          </button>
-          <div className="text-xs text-muted-foreground">
+        <div className="mt-4 space-y-3">
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium mb-2">What you can do:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Try a different chapter (e.g., Proverbs 1)</li>
+              <li>Try a popular book like John, Psalms, or Genesis</li>
+              <li>Upload full Bible data using the admin tools</li>
+              <li>Check if the translation is available</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={fetchChapter}
+              className="text-sm underline hover:no-underline bg-destructive/20 px-3 py-1 rounded"
+            >
+              Try again
+            </button>
+            <button
+              onClick={() => (window.location.href = "/bible/john/3")}
+              className="text-sm underline hover:no-underline bg-blue-100 px-3 py-1 rounded"
+            >
+              Go to John 3:16
+            </button>
+            <button
+              onClick={() => (window.location.href = "/bible/psalms/23")}
+              className="text-sm underline hover:no-underline bg-green-100 px-3 py-1 rounded"
+            >
+              Go to Psalm 23
+            </button>
+          </div>
+
+          <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
+            <p className="font-medium">Debug Info:</p>
             <p>
               Requested: {book} {chapter} ({translation.toUpperCase()})
             </p>
             <p>Normalized: {normalizeBookName(book) || "Unknown"}</p>
+            <p>Available sample books: John, Psalms, Genesis, Matthew, Romans, Philippians, Proverbs</p>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+        <span className="ml-2">Loading chapter...</span>
       </div>
     )
   }
