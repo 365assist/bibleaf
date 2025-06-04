@@ -52,24 +52,39 @@ export async function GET(request: NextRequest) {
     const chapterData = await bibleBlobService.getChapter(translation, normalizedBook, chapter)
 
     if (!chapterData) {
-      // Try to get available books for debugging
+      // Try to get available books and chapters for debugging
       try {
         const availableBooks = await bibleBlobService.getBooks(translation)
+        const bibleData = await bibleBlobService.downloadBibleTranslation(translation)
+
+        let availableChapters: number[] = []
+        if (bibleData && bibleData.books[normalizedBook]) {
+          availableChapters = Object.keys(bibleData.books[normalizedBook])
+            .map(Number)
+            .sort((a, b) => a - b)
+        }
+
         console.log(
           "Available books:",
           availableBooks.map((b) => b.id),
         )
+        console.log(`Available chapters for ${normalizedBook}:`, availableChapters)
 
         return NextResponse.json(
           {
             success: false,
             error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
+            suggestion:
+              availableChapters.length > 0
+                ? `Available chapters for ${bookParam}: ${availableChapters.join(", ")}`
+                : `Book ${bookParam} is available but no chapters found. Try uploading sample data.`,
             debug: {
               requestedBook: bookParam,
               normalizedBook,
               chapter,
               translation,
-              availableBooks: availableBooks.map((b) => b.id).slice(0, 10), // First 10 for debugging
+              availableBooks: availableBooks.map((b) => b.id).slice(0, 10),
+              availableChapters: availableChapters.slice(0, 10),
             },
           },
           { status: 404 },
@@ -80,6 +95,7 @@ export async function GET(request: NextRequest) {
           {
             success: false,
             error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
+            suggestion: "Try uploading sample data using the 'Upload Sample Data' button.",
           },
           { status: 404 },
         )
@@ -204,24 +220,39 @@ export async function POST(request: NextRequest) {
     const chapterData = await bibleBlobService.getChapter(translation, normalizedBook, chapter)
 
     if (!chapterData) {
-      // Try to get available books for debugging
+      // Try to get available books and chapters for debugging
       try {
         const availableBooks = await bibleBlobService.getBooks(translation)
+        const bibleData = await bibleBlobService.downloadBibleTranslation(translation)
+
+        let availableChapters: number[] = []
+        if (bibleData && bibleData.books[normalizedBook]) {
+          availableChapters = Object.keys(bibleData.books[normalizedBook])
+            .map(Number)
+            .sort((a, b) => a - b)
+        }
+
         console.log(
           "POST Available books:",
           availableBooks.map((b) => b.id),
         )
+        console.log(`POST Available chapters for ${normalizedBook}:`, availableChapters)
 
         return NextResponse.json(
           {
             success: false,
             error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
+            suggestion:
+              availableChapters.length > 0
+                ? `Available chapters for ${bookParam}: ${availableChapters.join(", ")}`
+                : `Book ${bookParam} is available but no chapters found. Try uploading sample data.`,
             debug: {
               requestedBook: bookParam,
               normalizedBook,
               chapter,
               translation,
-              availableBooks: availableBooks.map((b) => b.id).slice(0, 10), // First 10 for debugging
+              availableBooks: availableBooks.map((b) => b.id).slice(0, 10),
+              availableChapters: availableChapters.slice(0, 10),
             },
           },
           { status: 404 },
@@ -232,6 +263,7 @@ export async function POST(request: NextRequest) {
           {
             success: false,
             error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
+            suggestion: "Try uploading sample data using the 'Upload Sample Data' button.",
           },
           { status: 404 },
         )
