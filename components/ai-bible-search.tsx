@@ -39,6 +39,10 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
   const [crossReferences, setCrossReferences] = useState<SearchResult[]>([])
   const [showContextViewer, setShowContextViewer] = useState<string | null>(null)
 
+  // Add a retry counter state
+  const [retryCount, setRetryCount] = useState(0)
+
+  // Modify the handleSearch function to include retry logic
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -51,7 +55,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
       setLimitExceeded(false)
       setIsFallback(false)
 
-      console.log("Starting search for:", query.trim())
+      console.log("Starting search for:", query.trim(), "Attempt:", retryCount + 1)
 
       // Use a try-catch block for the fetch operation itself
       let response
@@ -65,6 +69,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
           body: JSON.stringify({
             query: query.trim(),
             userId,
+            retry: retryCount > 0, // Send retry flag to API
           }),
         })
       } catch (fetchError) {
@@ -130,6 +135,19 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
       // Handle successful response
       if (data.results && Array.isArray(data.results)) {
         console.log("Setting results:", data.results.length, "verses found")
+
+        // If no results on first attempt, try once more
+        if (data.results.length === 0 && retryCount === 0) {
+          console.log("No results on first attempt, retrying...")
+          setRetryCount(1)
+          setIsLoading(false)
+          // Small delay before retry
+          setTimeout(() => {
+            handleSearch(e)
+          }, 500)
+          return
+        }
+
         setResults(data.results)
 
         // Show fallback notice if applicable
@@ -137,6 +155,9 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
           console.log("Using fallback results due to AI service unavailability")
           setIsFallback(true)
         }
+
+        // Reset retry counter for next search
+        setRetryCount(0)
 
         // Notify parent component that search was completed successfully
         if (onSearchComplete) {
