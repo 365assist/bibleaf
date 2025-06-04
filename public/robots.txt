@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /auth/
+
+# Allow public pages
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /pricing
+
+# Sitemap location
+Sitemap: https://bibleaf.ai/sitemap.xml

@@ -51,7 +51,6 @@
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
     "next-auth": "latest",
-    "next-pwa": "latest",
     "next-themes": "latest",
     "nodemailer": "latest",
     "openai": "latest",

@@ -1,279 +1,255 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Search, MessageCircle, Play, Pause, RotateCcw } from "lucide-react"
-
-interface DemoStep {
-  id: string
-  type: "search" | "guidance"
-  query: string
-  response: {
-    verse?: {
-      reference: string
-      text: string
-    }
-    insight: string
-    relevance?: number
-  }
-  delay: number
-}
-
-const demoSteps: DemoStep[] = [
-  {
-    id: "search-1",
-    type: "search",
-    query: "How can I find peace in difficult times?",
-    response: {
-      verse: {
-        reference: "Philippians 4:6-7",
-        text: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.",
-      },
-      insight:
-        "This passage teaches us that peace comes through prayer and surrendering our worries to God. The 'peace that transcends understanding' is a supernatural calm that God provides when we trust Him with our concerns.",
-      relevance: 95,
-    },
-    delay: 2000,
-  },
-  {
-    id: "guidance-1",
-    type: "guidance",
-    query: "I'm struggling with forgiveness",
-    response: {
-      verse: {
-        reference: "Matthew 6:14-15",
-        text: "For if you forgive other people when they sin against you, your heavenly Father will also forgive you. But if you do not forgive others their sins, your Father will not forgive your sins.",
-      },
-      insight:
-        "Forgiveness is both a command and a gift. Jesus teaches that our forgiveness of others is connected to God's forgiveness of us. This doesn't mean we excuse harmful behavior, but we release the burden of resentment for our own spiritual health.",
-      relevance: 92,
-    },
-    delay: 2500,
-  },
-  {
-    id: "search-2",
-    type: "search",
-    query: "What does the Bible say about God's love?",
-    response: {
-      verse: {
-        reference: "1 John 4:8",
-        text: "Whoever does not love does not know God, because God is love.",
-      },
-      insight:
-        "This verse reveals that love isn't just something God does - it's who God is. His very nature is love, which means every action He takes toward us flows from perfect, unconditional love.",
-      relevance: 98,
-    },
-    delay: 1800,
-  },
-]
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, Search, Heart, Book } from "lucide-react"
+import { AIDisclaimer } from "@/components/ai-disclaimer"
+import { useToast } from "@/hooks/use-toast"
 
 export default function InteractiveDemo() {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [displayedQuery, setDisplayedQuery] = useState("")
-  const [showResponse, setShowResponse] = useState(false)
-  const [typingComplete, setTypingComplete] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [guidanceQuery, setGuidanceQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [guidanceResult, setGuidanceResult] = useState<any>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [isGettingGuidance, setIsGettingGuidance] = useState(false)
+  const [activeTab, setActiveTab] = useState<"search" | "guidance">("search")
+  const { toast } = useToast()
 
-  const currentDemo = demoSteps[currentStep]
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return
 
-  // Auto-advance demo
-  useEffect(() => {
-    if (!isPlaying) return
+    setIsSearching(true)
+    try {
+      const response = await fetch("/api/ai/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery }),
+      })
 
-    const timer = setTimeout(() => {
-      if (currentStep < demoSteps.length - 1) {
-        setCurrentStep((prev) => prev + 1)
-        setShowResponse(false)
-        setDisplayedQuery("")
-        setTypingComplete(false)
+      if (response.ok) {
+        const data = await response.json()
+        setSearchResults(data.results || [])
       } else {
-        setIsPlaying(false)
+        throw new Error("Search failed")
       }
-    }, currentDemo.delay + 3000)
-
-    return () => clearTimeout(timer)
-  }, [currentStep, isPlaying, currentDemo.delay])
-
-  // Typing effect
-  useEffect(() => {
-    if (!isPlaying) return
-
-    setDisplayedQuery("")
-    setShowResponse(false)
-    setTypingComplete(false)
-
-    let index = 0
-    const typeTimer = setInterval(() => {
-      if (index < currentDemo.query.length) {
-        setDisplayedQuery(currentDemo.query.slice(0, index + 1))
-        index++
-      } else {
-        clearInterval(typeTimer)
-        setTypingComplete(true)
-        setTimeout(() => setShowResponse(true), 500)
-      }
-    }, 50)
-
-    return () => clearInterval(typeTimer)
-  }, [currentStep, isPlaying, currentDemo.query])
-
-  const startDemo = () => {
-    setIsPlaying(true)
-    setCurrentStep(0)
+    } catch (error) {
+      toast({
+        title: "Search Error",
+        description: "Unable to search at the moment. Please try again later.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSearching(false)
+    }
   }
 
-  const pauseDemo = () => {
-    setIsPlaying(false)
+  const handleGuidance = async () => {
+    if (!guidanceQuery.trim()) return
+
+    setIsGettingGuidance(true)
+    try {
+      const response = await fetch("/api/ai/guidance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ situation: guidanceQuery }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setGuidanceResult(data)
+      } else {
+        throw new Error("Guidance request failed")
+      }
+    } catch (error) {
+      toast({
+        title: "Guidance Error",
+        description: "Unable to provide guidance at the moment. Please try again later.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGettingGuidance(false)
+    }
   }
 
-  const resetDemo = () => {
-    setIsPlaying(false)
-    setCurrentStep(0)
-    setDisplayedQuery("")
-    setShowResponse(false)
-    setTypingComplete(false)
+  const handleFeedback = () => {
+    toast({
+      title: "Feedback Noted",
+      description: "Thank you for your feedback! This helps us improve our AI responses.",
+    })
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-200">See BibleAF in Action</h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Watch how our AI-powered search and guidance features work
-        </p>
-        <div className="flex justify-center gap-2">
+    <div className="max-w-4xl mx-auto">
+      <div className="text-center mb-8">
+        <h2 className="text-4xl font-bold mb-4 text-white">Experience AI-Powered Bible Study</h2>
+        <p className="text-xl text-amber-100 mb-8">Try our intelligent search and guidance features right now</p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex justify-center mb-8">
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1">
           <Button
-            onClick={startDemo}
-            disabled={isPlaying}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+            variant={activeTab === "search" ? "default" : "ghost"}
+            onClick={() => setActiveTab("search")}
+            className={`mr-2 ${activeTab === "search" ? "bg-white text-amber-600" : "text-white hover:bg-white/20"}`}
           >
-            <Play size={16} className="mr-2" />
-            Start Demo
+            <Search className="h-4 w-4 mr-2" />
+            Bible Search
           </Button>
-          <Button onClick={pauseDemo} disabled={!isPlaying} variant="outline" className="border-amber-300">
-            <Pause size={16} className="mr-2" />
-            Pause
-          </Button>
-          <Button onClick={resetDemo} variant="outline" className="border-amber-300">
-            <RotateCcw size={16} className="mr-2" />
-            Reset
+          <Button
+            variant={activeTab === "guidance" ? "default" : "ghost"}
+            onClick={() => setActiveTab("guidance")}
+            className={activeTab === "guidance" ? "bg-white text-amber-600" : "text-white hover:bg-white/20"}
+          >
+            <Heart className="h-4 w-4 mr-2" />
+            Life Guidance
           </Button>
         </div>
       </div>
 
-      <Card className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-xl">
-        <CardContent className="p-6">
-          {/* Demo Interface */}
-          <div className="space-y-4">
-            {/* Search/Guidance Type Indicator */}
-            <div className="flex items-center gap-2 mb-4">
-              {currentDemo.type === "search" ? (
-                <>
-                  <Search className="text-amber-600" size={20} />
-                  <span className="font-semibold text-amber-600">AI Bible Search</span>
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="text-green-600" size={20} />
-                  <span className="font-semibold text-green-600">Life Guidance</span>
-                </>
-              )}
-            </div>
+      {/* AI Disclaimer */}
+      <div className="mb-6">
+        <AIDisclaimer onFeedback={handleFeedback} />
+      </div>
 
-            {/* Input Field */}
-            <div className="relative">
+      {activeTab === "search" && (
+        <Card className="divine-light-card mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Search className="h-5 w-5 mr-2 text-amber-600" />
+              AI Bible Search
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 mb-6">
               <Input
-                value={displayedQuery}
-                readOnly
-                placeholder={isPlaying ? "Typing..." : "Click 'Start Demo' to see AI in action"}
-                className="pr-12 text-lg py-3 border-amber-200 dark:border-amber-800 focus:border-amber-500"
+                placeholder="Search for verses about love, hope, strength..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                className="flex-1"
               />
-              {typingComplete && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                </div>
-              )}
+              <Button onClick={handleSearch} disabled={isSearching} className="divine-button">
+                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
+              </Button>
             </div>
 
-            {/* Response */}
-            {showResponse && (
-              <div className="mt-6 space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                {/* Verse Card */}
-                {currentDemo.response.verse && (
-                  <Card className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 border-amber-200 dark:border-amber-800">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-amber-800 dark:text-amber-200">
-                          {currentDemo.response.verse.reference}
-                        </h4>
-                        {currentDemo.response.relevance && (
-                          <span className="text-xs bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 px-2 py-1 rounded-full">
-                            {currentDemo.response.relevance}% relevant
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-700 dark:text-gray-300 italic leading-relaxed">
-                        "{currentDemo.response.verse.text}"
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* AI Insight */}
-                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+            {/* Search Results */}
+            <div className="space-y-4" aria-live="polite">
+              {searchResults.map((result, index) => (
+                <Card key={index} className="border-amber-200">
                   <CardContent className="p-4">
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-                      <MessageCircle size={16} />
-                      AI Insight
-                    </h4>
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{currentDemo.response.insight}</p>
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                        {result.reference}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {Math.round((result.relevanceScore || 0.9) * 100)}% match
+                      </Badge>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 mb-3 italic">"{result.text}"</p>
+                    {result.context && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <strong>Context:</strong> {result.context}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "guidance" && (
+        <Card className="divine-light-card mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Heart className="h-5 w-5 mr-2 text-amber-600" />
+              AI Life Guidance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 mb-6">
+              <Textarea
+                placeholder="Describe your situation or question... (e.g., 'I'm struggling with anxiety about my future')"
+                value={guidanceQuery}
+                onChange={(e) => setGuidanceQuery(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <Button onClick={handleGuidance} disabled={isGettingGuidance} className="divine-button">
+                {isGettingGuidance ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Get Biblical Guidance
+              </Button>
+            </div>
+
+            {/* Guidance Results */}
+            {guidanceResult && (
+              <div className="space-y-6" aria-live="polite">
+                <Card className="border-amber-200">
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold mb-3 flex items-center">
+                      <Book className="h-5 w-5 mr-2 text-amber-600" />
+                      Biblical Guidance
+                    </h3>
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">{guidanceResult.guidance}</p>
+
+                    {guidanceResult.relevantVerses && guidanceResult.relevantVerses.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-medium mb-2">Relevant Verses:</h4>
+                        <div className="space-y-2">
+                          {guidanceResult.relevantVerses.map((verse: any, index: number) => (
+                            <div key={index} className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded">
+                              <Badge variant="secondary" className="mb-2">
+                                {verse.reference}
+                              </Badge>
+                              <p className="text-sm italic mb-1">"{verse.text}"</p>
+                              {verse.context && (
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{verse.context}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {guidanceResult.practicalSteps && guidanceResult.practicalSteps.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-medium mb-2">Practical Steps:</h4>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                          {guidanceResult.practicalSteps.map((step: string, index: number) => (
+                            <li key={index}>{step}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {guidanceResult.prayerSuggestion && (
+                      <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded">
+                        <h4 className="font-medium mb-2">Suggested Prayer:</h4>
+                        <p className="text-sm italic text-blue-800 dark:text-blue-200">
+                          {guidanceResult.prayerSuggestion}
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Demo Progress */}
-            <div className="flex justify-center mt-6">
-              <div className="flex gap-2">
-                {demoSteps.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      index === currentStep ? "bg-amber-500" : index < currentStep ? "bg-amber-300" : "bg-gray-300"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Feature Highlights */}
-      <div className="grid md:grid-cols-3 gap-4 mt-6">
-        <Card className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border-amber-200 dark:border-amber-800">
-          <CardContent className="p-4 text-center">
-            <Search className="text-amber-600 mx-auto mb-2" size={24} />
-            <h4 className="font-semibold mb-1">Smart Search</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Find verses by meaning, not just keywords</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border-amber-200 dark:border-amber-800">
-          <CardContent className="p-4 text-center">
-            <MessageCircle className="text-green-600 mx-auto mb-2" size={24} />
-            <h4 className="font-semibold mb-1">AI Insights</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Get contextual explanations and applications</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border-amber-200 dark:border-amber-800">
-          <CardContent className="p-4 text-center">
-            <div className="text-purple-600 mx-auto mb-2 font-bold text-lg">95%</div>
-            <h4 className="font-semibold mb-1">Accuracy</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Highly relevant biblical responses</p>
-          </CardContent>
-        </Card>
+      <div className="text-center">
+        <p className="text-amber-100 mb-4">Ready to dive deeper into Scripture with AI assistance?</p>
+        <Button asChild size="lg" className="bg-white text-amber-600 hover:bg-amber-50">
+          <a href="/auth/signup">Start Your Free Account</a>
+        </Button>
       </div>
     </div>
   )
