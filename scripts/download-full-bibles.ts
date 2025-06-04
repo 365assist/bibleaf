@@ -366,31 +366,6 @@ class FullBibleDownloader {
     console.log("🔗 Test at: /test-full-bible")
     console.log("=".repeat(60))
   }
-
-  // Download specific translation only
-  async downloadSingleTranslation(translationId: string): Promise<void> {
-    const config = this.BIBLE_SOURCES[translationId as keyof typeof this.BIBLE_SOURCES]
-    if (!config) {
-      console.error(`❌ Unknown translation: ${translationId}`)
-      console.log(`Available translations: ${Object.keys(this.BIBLE_SOURCES).join(", ")}`)
-      return
-    }
-
-    console.log(`📖 Downloading ${config.name} (${config.abbreviation})...`)
-
-    try {
-      const bibleData = await this.downloadBibleTranslation(translationId, config)
-      if (bibleData) {
-        await this.uploadToBlob(translationId, bibleData)
-        console.log(`✅ ${config.abbreviation} uploaded successfully!`)
-        await this.printSummary()
-      } else {
-        console.log(`❌ Failed to download ${config.abbreviation}`)
-      }
-    } catch (error) {
-      console.error(`❌ Error processing ${config.abbreviation}:`, error)
-    }
-  }
 }
 
 // Main execution
