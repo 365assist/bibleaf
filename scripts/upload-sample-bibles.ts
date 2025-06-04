@@ -1,8 +1,8 @@
 // Script to upload sample Bible data to Vercel Blob storage
-import { bibleBlobService, type BibleTranslationData } from "../lib/bible-blob-service"
+import { put } from "@vercel/blob"
 
 // Sample KJV data
-const kjvData: BibleTranslationData = {
+const kjvData = {
   translation: {
     id: "kjv",
     name: "King James Version",
@@ -80,7 +80,7 @@ const kjvData: BibleTranslationData = {
 }
 
 // Sample WEB data
-const webData: BibleTranslationData = {
+const webData = {
   translation: {
     id: "web",
     name: "World English Bible",
@@ -119,36 +119,157 @@ const webData: BibleTranslationData = {
 }
 
 async function uploadSampleBibles() {
-  console.log("Uploading sample Bible data to Vercel Blob...")
+  console.log("🚀 Starting Bible data upload to Vercel Blob...")
 
   try {
-    // Upload KJV
-    const kjvUrl = await bibleBlobService.uploadBibleTranslation("kjv", kjvData)
-    if (kjvUrl) {
-      console.log("✅ KJV uploaded successfully:", kjvUrl)
-    } else {
-      console.log("❌ Failed to upload KJV")
+    // Check if BLOB_READ_WRITE_TOKEN is available
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error("❌ BLOB_READ_WRITE_TOKEN environment variable not found")
+      console.log("Please ensure your Vercel Blob token is configured in environment variables")
+      return
     }
 
-    // Upload WEB
-    const webUrl = await bibleBlobService.uploadBibleTranslation("web", webData)
-    if (webUrl) {
-      console.log("✅ WEB uploaded successfully:", webUrl)
-    } else {
-      console.log("❌ Failed to upload WEB")
+    console.log("✅ Blob token found, proceeding with upload...")
+
+    // Upload KJV Bible
+    console.log("📖 Uploading King James Version (KJV)...")
+    const kjvBlob = await put("bibles/kjv.json", JSON.stringify(kjvData, null, 2), {
+      access: "public",
+      contentType: "application/json",
+    })
+    console.log("✅ KJV uploaded successfully!")
+    console.log(`   URL: ${kjvBlob.url}`)
+    console.log(`   Size: ${kjvBlob.size} bytes`)
+
+    // Upload WEB Bible
+    console.log("📖 Uploading World English Bible (WEB)...")
+    const webBlob = await put("bibles/web.json", JSON.stringify(webData, null, 2), {
+      access: "public",
+      contentType: "application/json",
+    })
+    console.log("✅ WEB uploaded successfully!")
+    console.log(`   URL: ${webBlob.url}`)
+    console.log(`   Size: ${webBlob.size} bytes`)
+
+    // Upload ASV Bible (additional sample)
+    const asvData = {
+      translation: {
+        id: "asv",
+        name: "American Standard Version",
+        abbreviation: "ASV",
+        language: "en",
+        year: 1901,
+        copyright: "Public Domain",
+        isPublicDomain: true,
+      },
+      books: {
+        john: {
+          3: {
+            16: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth on him should not perish, but have eternal life.",
+          },
+        },
+        psalms: {
+          23: {
+            1: "Jehovah is my shepherd; I shall not want.",
+            2: "He maketh me to lie down in green pastures; He leadeth me beside still waters.",
+          },
+        },
+      },
+      metadata: {
+        totalVerses: 3,
+        totalChapters: 2,
+        downloadDate: new Date().toISOString(),
+        source: "sample-data",
+      },
     }
 
-    // List available translations
-    const translations = await bibleBlobService.listAvailableTranslations()
-    console.log("📚 Available translations:", translations)
+    console.log("📖 Uploading American Standard Version (ASV)...")
+    const asvBlob = await put("bibles/asv.json", JSON.stringify(asvData, null, 2), {
+      access: "public",
+      contentType: "application/json",
+    })
+    console.log("✅ ASV uploaded successfully!")
+    console.log(`   URL: ${asvBlob.url}`)
+    console.log(`   Size: ${asvBlob.size} bytes`)
 
-    // Get stats
-    const stats = await bibleBlobService.getBibleStats()
-    console.log("📊 Bible statistics:", stats)
+    // Create index file
+    const indexData = {
+      translations: [
+        {
+          id: "kjv",
+          name: "King James Version",
+          abbreviation: "KJV",
+          language: "en",
+          year: 1769,
+          isPublicDomain: true,
+          url: kjvBlob.url,
+        },
+        {
+          id: "web",
+          name: "World English Bible",
+          abbreviation: "WEB",
+          language: "en",
+          year: 2000,
+          isPublicDomain: true,
+          url: webBlob.url,
+        },
+        {
+          id: "asv",
+          name: "American Standard Version",
+          abbreviation: "ASV",
+          language: "en",
+          year: 1901,
+          isPublicDomain: true,
+          url: asvBlob.url,
+        },
+      ],
+      lastUpdated: new Date().toISOString(),
+      totalTranslations: 3,
+    }
 
-    console.log("🎉 Sample Bible upload complete!")
+    console.log("📋 Creating translations index...")
+    const indexBlob = await put("bibles/index.json", JSON.stringify(indexData, null, 2), {
+      access: "public",
+      contentType: "application/json",
+    })
+    console.log("✅ Index created successfully!")
+    console.log(`   URL: ${indexBlob.url}`)
+
+    // Summary
+    console.log("\n🎉 Bible upload complete!")
+    console.log("📊 Summary:")
+    console.log(`   • 3 Bible translations uploaded`)
+    console.log(`   • KJV: 20 verses across 8 chapters`)
+    console.log(`   • WEB: 6 verses across 3 chapters`)
+    console.log(`   • ASV: 3 verses across 2 chapters`)
+    console.log(`   • Total: 29 verses available for testing`)
+    console.log("\n🔗 Files uploaded:")
+    console.log(`   • ${kjvBlob.url}`)
+    console.log(`   • ${webBlob.url}`)
+    console.log(`   • ${asvBlob.url}`)
+    console.log(`   • ${indexBlob.url}`)
+
+    console.log("\n✨ Your Bible app now has cloud storage!")
+    console.log("Visit /test-blob-bible to test the integration")
   } catch (error) {
-    console.error("❌ Error uploading sample Bibles:", error)
+    console.error("❌ Error uploading Bible data:", error)
+
+    if (error instanceof Error) {
+      if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+        console.log("\n🔑 Authentication Error:")
+        console.log("Please check that your BLOB_READ_WRITE_TOKEN is correct")
+        console.log("You can find your token in the Vercel dashboard under Storage > Blob")
+      } else if (error.message.includes("403") || error.message.includes("Forbidden")) {
+        console.log("\n🚫 Permission Error:")
+        console.log("Your blob token may not have write permissions")
+        console.log("Please ensure you're using a read-write token")
+      } else {
+        console.log("\n🔧 Troubleshooting:")
+        console.log("1. Check your internet connection")
+        console.log("2. Verify your BLOB_READ_WRITE_TOKEN is set correctly")
+        console.log("3. Try again in a few moments")
+      }
+    }
   }
 }
 
