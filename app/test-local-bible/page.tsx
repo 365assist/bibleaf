@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, BarChart3, Calendar, Shuffle } from "lucide-react"
+import { Search, BarChart3, Calendar, Shuffle, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface BibleVerse {
   book: string
@@ -22,16 +23,21 @@ interface BibleStats {
   totalVerses: number
   lastUpdated: string
   availableBooks: string[]
-  sampleVerses: Array<{
-    book: string
-    chapter: number
-    verse: number
-    text: string
-  }>
+}
+
+interface BibleTranslation {
+  id: string
+  name: string
+  abbreviation: string
+  language: string
+  year: number
+  copyright: string
+  isPublicDomain: boolean
 }
 
 export default function TestLocalBiblePage() {
   const [stats, setStats] = useState<BibleStats | null>(null)
+  const [translations, setTranslations] = useState<BibleTranslation[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<BibleVerse[]>([])
   const [dailyVerse, setDailyVerse] = useState<BibleVerse | null>(null)
@@ -40,36 +46,70 @@ export default function TestLocalBiblePage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadStats()
-    loadDailyVerse()
+    loadInitialData()
   }, [])
+
+  const loadInitialData = async () => {
+    setError(null)
+    try {
+      await Promise.all([loadStats(), loadTranslations(), loadDailyVerse()])
+    } catch (err) {
+      setError("Failed to load initial Bible data")
+      console.error(err)
+    }
+  }
 
   const loadStats = async () => {
     try {
       const response = await fetch("/api/bible/stats")
+      if (!response.ok) {
+        throw new Error(`Failed to load stats: ${response.status}`)
+      }
       const data = await response.json()
-
-      if (data.success) {
+      if (data.success && data.stats) {
         setStats(data.stats)
       } else {
-        setError("Failed to load Bible statistics")
+        throw new Error(data.error || "Invalid stats data")
       }
     } catch (err) {
-      setError("Error loading Bible statistics")
-      console.error(err)
+      console.error("Error loading Bible statistics:", err)
+      throw err
+    }
+  }
+
+  const loadTranslations = async () => {
+    try {
+      const response = await fetch("/api/bible/translations")
+      if (!response.ok) {
+        throw new Error(`Failed to load translations: ${response.status}`)
+      }
+      const data = await response.json()
+      if (data.success && data.translations) {
+        setTranslations(data.translations)
+      } else {
+        throw new Error(data.error || "Invalid translations data")
+      }
+    } catch (err) {
+      console.error("Error loading Bible translations:", err)
+      throw err
     }
   }
 
   const loadDailyVerse = async () => {
     try {
       const response = await fetch("/api/bible/daily-verse")
+      if (!response.ok) {
+        throw new Error(`Failed to load daily verse: ${response.status}`)
+      }
       const data = await response.json()
-
       if (data.success && data.verse) {
         setDailyVerse(data.verse)
+      } else {
+        console.warn("Daily verse not available:", data.error)
       }
     } catch (err) {
       console.error("Error loading daily verse:", err)
+      // Don't throw here, as this is not critical
     }
   }
 
@@ -81,12 +121,15 @@ export default function TestLocalBiblePage() {
 
     try {
       const response = await fetch(`/api/bible/search?q=${encodeURIComponent(searchQuery)}&limit=20`)
-      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status}`)
+      }
 
+      const data = await response.json()
       if (data.success) {
-        setSearchResults(data.verses)
+        setSearchResults(data.verses || [])
       } else {
-        setError("Search failed")
+        throw new Error(data.error || "Search failed")
       }
     } catch (err) {
       setError("Error searching Bible")
@@ -99,10 +142,15 @@ export default function TestLocalBiblePage() {
   const getRandomVerse = async () => {
     try {
       const response = await fetch("/api/bible/verse?random=true")
-      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(`Failed to get random verse: ${response.status}`)
+      }
 
+      const data = await response.json()
       if (data.success && data.verse) {
         setRandomVerse(data.verse)
+      } else {
+        console.warn("Random verse not available:", data.error)
       }
     } catch (err) {
       console.error("Error getting random verse:", err)
@@ -124,16 +172,16 @@ export default function TestLocalBiblePage() {
         </div>
 
         {error && (
-          <Card className="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
-            <CardContent className="pt-6">
-              <p className="text-red-600 dark:text-red-400">{error}</p>
-            </CardContent>
-          </Card>
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
         {/* Database Statistics */}
-        {stats && (
-          <Card className="mb-8 divine-light-card">
+        {stats ? (
+          <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 size={24} />
@@ -176,11 +224,36 @@ export default function TestLocalBiblePage() {
               </div>
             </CardContent>
           </Card>
+        ) : (
+          <Card className="mb-8">
+            <CardContent className="p-6 text-center">
+              <div className="animate-pulse">Loading Bible statistics...</div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Available Translations */}
+        {translations.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Available Translations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {translations.map((translation) => (
+                  <Badge key={translation.id} variant="outline">
+                    {translation.abbreviation} - {translation.name}
+                    {translation.isPublicDomain && " (Public Domain)"}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Daily Verse */}
-        {dailyVerse && (
-          <Card className="mb-8 divine-light-card">
+        {dailyVerse ? (
+          <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar size={24} />
@@ -196,10 +269,22 @@ export default function TestLocalBiblePage() {
               </div>
             </CardContent>
           </Card>
+        ) : (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar size={24} />
+                Daily Verse
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="animate-pulse">Loading daily verse...</div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Search Section */}
-        <Card className="mb-8 divine-light-card">
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search size={24} />
@@ -212,7 +297,7 @@ export default function TestLocalBiblePage() {
                 placeholder="Search for verses... (e.g., 'love', 'faith', 'hope')"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="flex-1"
               />
               <Button onClick={handleSearch} disabled={loading}>
@@ -241,7 +326,7 @@ export default function TestLocalBiblePage() {
         </Card>
 
         {/* Random Verse */}
-        <Card className="mb-8 divine-light-card">
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shuffle size={24} />
@@ -267,7 +352,7 @@ export default function TestLocalBiblePage() {
         </Card>
 
         {/* Quick Test Searches */}
-        <Card className="divine-light-card">
+        <Card>
           <CardHeader>
             <CardTitle>Quick Test Searches</CardTitle>
           </CardHeader>
@@ -280,7 +365,7 @@ export default function TestLocalBiblePage() {
                   size="sm"
                   onClick={() => {
                     setSearchQuery(term)
-                    handleSearch()
+                    setTimeout(() => handleSearch(), 100)
                   }}
                 >
                   {term}

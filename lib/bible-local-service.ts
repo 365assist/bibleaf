@@ -1,5 +1,5 @@
-import fs from "fs"
-import path from "path"
+// Client-side service for Bible data
+// This version doesn't use fs/path which aren't available in the browser
 
 export interface BibleVerse {
   book: string
@@ -23,8 +23,7 @@ export interface BibleTranslation {
   language: string
   year: number
   copyright: string
-  filename: string
-  available: boolean
+  isPublicDomain: boolean
 }
 
 export interface BibleStats {
@@ -34,243 +33,115 @@ export interface BibleStats {
   totalVerses: number
   lastUpdated: string
   availableBooks: string[]
-  sampleVerses: Array<{
-    book: string
-    chapter: number
-    verse: number
-    text: string
-  }>
 }
 
+// Client-side service that uses fetch API instead of direct file access
 class BibleLocalService {
-  private dataDir: string
-  private bibleData: Map<string, any> = new Map()
-  private translations: BibleTranslation[] = []
-  private stats: BibleStats | null = null
-
-  constructor() {
-    this.dataDir = path.join(process.cwd(), "data")
-    this.loadTranslations()
-    this.loadStats()
-  }
-
-  private loadTranslations() {
+  async getStats(): Promise<BibleStats | null> {
     try {
-      const translationsPath = path.join(this.dataDir, "translations.json")
-      if (fs.existsSync(translationsPath)) {
-        const data = fs.readFileSync(translationsPath, "utf-8")
-        this.translations = JSON.parse(data)
+      const response = await fetch("/api/bible/stats")
+      if (!response.ok) {
+        throw new Error(`Failed to fetch stats: ${response.status}`)
       }
+      const data = await response.json()
+      return data.stats
     } catch (error) {
-      console.warn("Could not load translations index:", error)
-      this.translations = []
-    }
-  }
-
-  private loadStats() {
-    try {
-      const statsPath = path.join(this.dataDir, "bible-stats.json")
-      if (fs.existsSync(statsPath)) {
-        const data = fs.readFileSync(statsPath, "utf-8")
-        this.stats = JSON.parse(data)
-      }
-    } catch (error) {
-      console.warn("Could not load Bible stats:", error)
-      this.stats = null
-    }
-  }
-
-  private loadBibleData(translationId = "kjv") {
-    if (this.bibleData.has(translationId)) {
-      return this.bibleData.get(translationId)
-    }
-
-    try {
-      const translation = this.translations.find((t) => t.id === translationId)
-      if (!translation) {
-        throw new Error(`Translation ${translationId} not found`)
-      }
-
-      const biblePath = path.join(this.dataDir, translation.filename)
-      if (!fs.existsSync(biblePath)) {
-        throw new Error(`Bible file not found: ${translation.filename}`)
-      }
-
-      const data = fs.readFileSync(biblePath, "utf-8")
-      const bibleData = JSON.parse(data)
-      this.bibleData.set(translationId, bibleData)
-      return bibleData
-    } catch (error) {
-      console.error(`Error loading Bible data for ${translationId}:`, error)
+      console.error("Error fetching Bible stats:", error)
       return null
     }
   }
 
   async getAvailableTranslations(): Promise<BibleTranslation[]> {
-    return this.translations.filter((t) => t.available)
-  }
-
-  async getBibleStats(): Promise<BibleStats | null> {
-    return this.stats
+    try {
+      const response = await fetch("/api/bible/translations")
+      if (!response.ok) {
+        throw new Error(`Failed to fetch translations: ${response.status}`)
+      }
+      const data = await response.json()
+      return data.translations || []
+    } catch (error) {
+      console.error("Error fetching translations:", error)
+      return []
+    }
   }
 
   async getChapter(book: string, chapter: number, translation = "kjv"): Promise<BibleChapter | null> {
     try {
-      const bibleData = this.loadBibleData(translation)
-      if (!bibleData || !bibleData.books[book] || !bibleData.books[book][chapter]) {
-        return null
+      const response = await fetch(
+        `/api/bible/chapter?book=${encodeURIComponent(book)}&chapter=${chapter}&translation=${translation}`,
+      )
+      if (!response.ok) {
+        throw new Error(`Failed to fetch chapter: ${response.status}`)
       }
-
-      const chapterData = bibleData.books[book][chapter]
-      const verses: BibleVerse[] = Object.entries(chapterData).map(([verseNum, text]) => ({
-        book,
-        chapter,
-        verse: Number.parseInt(verseNum),
-        text: text as string,
-        translation: bibleData.translation,
-      }))
-
-      return {
-        book,
-        chapter,
-        verses: verses.sort((a, b) => a.verse - b.verse),
-        translation: bibleData.translation,
-      }
+      const data = await response.json()
+      return data
     } catch (error) {
-      console.error("Error getting chapter:", error)
+      console.error("Error fetching chapter:", error)
       return null
     }
   }
 
   async getVerse(book: string, chapter: number, verse: number, translation = "kjv"): Promise<BibleVerse | null> {
     try {
-      const bibleData = this.loadBibleData(translation)
-      if (
-        !bibleData ||
-        !bibleData.books[book] ||
-        !bibleData.books[book][chapter] ||
-        !bibleData.books[book][chapter][verse]
-      ) {
-        return null
+      const response = await fetch(
+        `/api/bible/verse?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verse}&translation=${translation}`,
+      )
+      if (!response.ok) {
+        throw new Error(`Failed to fetch verse: ${response.status}`)
       }
-
-      return {
-        book,
-        chapter,
-        verse,
-        text: bibleData.books[book][chapter][verse],
-        translation: bibleData.translation,
-      }
+      const data = await response.json()
+      return data.verse
     } catch (error) {
-      console.error("Error getting verse:", error)
+      console.error("Error fetching verse:", error)
       return null
     }
   }
 
-  async searchBible(query: string, translation = "kjv", limit = 50): Promise<BibleVerse[]> {
+  async searchBible(query: string, translation = "kjv", limit = 20): Promise<BibleVerse[]> {
     try {
-      const bibleData = this.loadBibleData(translation)
-      if (!bibleData) {
-        return []
+      const response = await fetch("/api/bible/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query, translation, limit }),
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to search Bible: ${response.status}`)
       }
-
-      const results: BibleVerse[] = []
-      const searchTerm = query.toLowerCase()
-
-      for (const [book, chapters] of Object.entries(bibleData.books)) {
-        for (const [chapterNum, verses] of Object.entries(chapters as any)) {
-          for (const [verseNum, text] of Object.entries(verses as any)) {
-            if ((text as string).toLowerCase().includes(searchTerm)) {
-              results.push({
-                book,
-                chapter: Number.parseInt(chapterNum),
-                verse: Number.parseInt(verseNum),
-                text: text as string,
-                translation: bibleData.translation,
-              })
-
-              if (results.length >= limit) {
-                return results
-              }
-            }
-          }
-        }
-      }
-
-      return results
+      const data = await response.json()
+      return data.results || []
     } catch (error) {
       console.error("Error searching Bible:", error)
       return []
     }
   }
 
-  async getDailyVerse(date?: Date): Promise<BibleVerse | null> {
+  async getDailyVerse(translation = "kjv"): Promise<BibleVerse | null> {
     try {
-      if (!this.stats || !this.stats.sampleVerses.length) {
-        return null
+      const response = await fetch(`/api/bible/daily-verse?translation=${translation}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch daily verse: ${response.status}`)
       }
-
-      // Use date to determine which verse to show
-      const today = date || new Date()
-      const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000)
-      const verseIndex = dayOfYear % this.stats.sampleVerses.length
-      const sampleVerse = this.stats.sampleVerses[verseIndex]
-
-      return await this.getVerse(sampleVerse.book, sampleVerse.chapter, sampleVerse.verse)
+      const data = await response.json()
+      return data.verse
     } catch (error) {
-      console.error("Error getting daily verse:", error)
+      console.error("Error fetching daily verse:", error)
       return null
     }
   }
 
   async getRandomVerse(translation = "kjv"): Promise<BibleVerse | null> {
     try {
-      const bibleData = this.loadBibleData(translation)
-      if (!bibleData) {
-        return null
+      const response = await fetch(`/api/bible/verse?random=true&translation=${translation}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch random verse: ${response.status}`)
       }
-
-      const books = Object.keys(bibleData.books)
-      const randomBook = books[Math.floor(Math.random() * books.length)]
-      const chapters = Object.keys(bibleData.books[randomBook])
-      const randomChapter = chapters[Math.floor(Math.random() * chapters.length)]
-      const verses = Object.keys(bibleData.books[randomBook][randomChapter])
-      const randomVerse = verses[Math.floor(Math.random() * verses.length)]
-
-      return await this.getVerse(randomBook, Number.parseInt(randomChapter), Number.parseInt(randomVerse), translation)
+      const data = await response.json()
+      return data.verse
     } catch (error) {
-      console.error("Error getting random verse:", error)
+      console.error("Error fetching random verse:", error)
       return null
-    }
-  }
-
-  async getBookList(translation = "kjv"): Promise<string[]> {
-    try {
-      const bibleData = this.loadBibleData(translation)
-      if (!bibleData) {
-        return []
-      }
-
-      return Object.keys(bibleData.books).sort()
-    } catch (error) {
-      console.error("Error getting book list:", error)
-      return []
-    }
-  }
-
-  async getChapterList(book: string, translation = "kjv"): Promise<number[]> {
-    try {
-      const bibleData = this.loadBibleData(translation)
-      if (!bibleData || !bibleData.books[book]) {
-        return []
-      }
-
-      return Object.keys(bibleData.books[book])
-        .map((ch) => Number.parseInt(ch))
-        .sort((a, b) => a - b)
-    } catch (error) {
-      console.error("Error getting chapter list:", error)
-      return []
     }
   }
 }

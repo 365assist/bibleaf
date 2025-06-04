@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-import { bibleAPIService } from "@/lib/bible-api-service"
+import { bibleServerService } from "@/lib/bible-server-service"
 
 export async function GET() {
   try {
-    const translations = bibleAPIService.getAvailableTranslations()
+    const translations = bibleServerService.getAvailableTranslations()
 
     return NextResponse.json({
       success: true,
@@ -11,12 +11,11 @@ export async function GET() {
       count: translations.length,
     })
   } catch (error) {
-    console.error("Error fetching translations:", error)
+    console.error("Error getting Bible translations:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch translations",
-        translations: [],
+        error: "Failed to get Bible translations",
       },
       { status: 500 },
     )
