@@ -39,8 +39,8 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
   const [crossReferences, setCrossReferences] = useState<SearchResult[]>([])
   const [showContextViewer, setShowContextViewer] = useState<string | null>(null)
 
-  // Add a retry counter state
-  const [retryCount, setRetryCount] = useState(0)
+  // Remove this line:
+  // const [retryCount, setRetryCount] = useState(0)
 
   // Modify the handleSearch function to include retry logic
   const handleSearch = async (e: React.FormEvent) => {
@@ -55,7 +55,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
       setLimitExceeded(false)
       setIsFallback(false)
 
-      console.log("Starting search for:", query.trim(), "Attempt:", retryCount + 1)
+      console.log("Starting search for:", query.trim())
 
       // Use a try-catch block for the fetch operation itself
       let response
@@ -69,54 +69,35 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
           body: JSON.stringify({
             query: query.trim(),
             userId,
-            retry: retryCount > 0, // Send retry flag to API
           }),
         })
       } catch (fetchError) {
         console.error("Network error during fetch:", fetchError)
-        throw new Error("Network error. Please check your connection and try again.")
+        // Use fallback results immediately on network error
+        setIsFallback(true)
+        setResults(getFallbackResults(query.trim()))
+        return
       }
 
       console.log("Response status:", response.status)
-      console.log("Response headers:", response.headers.get("content-type"))
 
       // Always try to parse as JSON first
       let data
-      let responseText
       try {
-        responseText = await response.text()
+        const responseText = await response.text()
         console.log("Raw response:", responseText.substring(0, 200) + "...")
 
         if (!responseText.trim()) {
           throw new Error("Empty response from server")
         }
 
-        try {
-          data = JSON.parse(responseText)
-        } catch (jsonError) {
-          console.error("Failed to parse response as JSON:", jsonError)
-          console.error("Raw response:", responseText)
-
-          // Use fallback results instead of throwing
-          setIsFallback(true)
-          data = {
-            success: true,
-            fallback: true,
-            results: getFallbackResults(query.trim()),
-            query: query.trim(),
-          }
-        }
-      } catch (textError) {
-        console.error("Failed to get response text:", textError)
-
-        // Use fallback results
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error("Failed to parse response:", parseError)
+        // Use fallback results instead of throwing
         setIsFallback(true)
-        data = {
-          success: true,
-          fallback: true,
-          results: getFallbackResults(query.trim()),
-          query: query.trim(),
-        }
+        setResults(getFallbackResults(query.trim()))
+        return
       }
 
       console.log("Parsed response data:", data)
@@ -127,27 +108,16 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
           setLimitExceeded(true)
           setError(data.message || "Daily search limit exceeded")
         } else {
-          throw new Error(data.error || data.details || "Search failed")
+          // Use fallback on API error
+          setIsFallback(true)
+          setResults(getFallbackResults(query.trim()))
         }
         return
       }
 
       // Handle successful response
-      if (data.results && Array.isArray(data.results)) {
+      if (data.results && Array.isArray(data.results) && data.results.length > 0) {
         console.log("Setting results:", data.results.length, "verses found")
-
-        // If no results on first attempt, try once more
-        if (data.results.length === 0 && retryCount === 0) {
-          console.log("No results on first attempt, retrying...")
-          setRetryCount(1)
-          setIsLoading(false)
-          // Small delay before retry
-          setTimeout(() => {
-            handleSearch(e)
-          }, 500)
-          return
-        }
-
         setResults(data.results)
 
         // Show fallback notice if applicable
@@ -156,26 +126,19 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
           setIsFallback(true)
         }
 
-        // Reset retry counter for next search
-        setRetryCount(0)
-
         // Notify parent component that search was completed successfully
         if (onSearchComplete) {
           onSearchComplete()
         }
       } else {
-        console.warn("No results in response or results not an array:", data)
-        setResults([])
+        // No results from API, use fallback
+        console.log("No results from API, using fallback")
+        setIsFallback(true)
+        setResults(getFallbackResults(query.trim()))
       }
     } catch (error) {
       console.error("Search error:", error)
-      if (error instanceof Error) {
-        setError(error.message)
-      } else {
-        setError("Search failed. Please try again.")
-      }
-
-      // Use fallback results on error
+      // Use fallback results on any error
       setIsFallback(true)
       setResults(getFallbackResults(query.trim()))
     } finally {
@@ -268,11 +231,19 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
 
   const handleExampleSearch = (exampleQuery: string) => {
     setQuery(exampleQuery)
-    // Trigger search automatically with a slight delay to ensure state is updated
+    // Reset states before search
+    setResults([])
+    setError("")
+    setIsFallback(false)
+
+    // Trigger search with a small delay to ensure state is updated
     setTimeout(() => {
-      const fakeEvent = { preventDefault: () => {} } as React.FormEvent
+      const fakeEvent = {
+        preventDefault: () => {},
+        target: { value: exampleQuery },
+      } as any
       handleSearch(fakeEvent)
-    }, 100)
+    }, 50)
   }
 
   return (
