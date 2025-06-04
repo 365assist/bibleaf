@@ -1,233 +1,278 @@
-// Local Bible service using our own database
-import { bibleDatabase, type BibleChapterData, type BibleTranslation } from "./bible-database"
+import fs from "fs"
+import path from "path"
 
-interface BibleSearchResult {
-  reference: string
-  text: string
-  translation: string
+export interface BibleVerse {
   book: string
   chapter: number
   verse: number
+  text: string
+  translation: string
 }
 
-export class BibleLocalService {
-  private isInitialized = false
+export interface BibleChapter {
+  book: string
+  chapter: number
+  verses: BibleVerse[]
+  translation: string
+}
+
+export interface BibleTranslation {
+  id: string
+  name: string
+  abbreviation: string
+  language: string
+  year: number
+  copyright: string
+  filename: string
+  available: boolean
+}
+
+export interface BibleStats {
+  totalTranslations: number
+  totalBooks: number
+  totalChapters: number
+  totalVerses: number
+  lastUpdated: string
+  availableBooks: string[]
+  sampleVerses: Array<{
+    book: string
+    chapter: number
+    verse: number
+    text: string
+  }>
+}
+
+class BibleLocalService {
+  private dataDir: string
+  private bibleData: Map<string, any> = new Map()
+  private translations: BibleTranslation[] = []
+  private stats: BibleStats | null = null
 
   constructor() {
-    this.initializeDatabase()
+    this.dataDir = path.join(process.cwd(), "data")
+    this.loadTranslations()
+    this.loadStats()
   }
 
-  private async initializeDatabase(): Promise<void> {
-    if (this.isInitialized) return
-
+  private loadTranslations() {
     try {
-      // Try to load Bible data from public files
-      await this.loadBibleData()
-      this.isInitialized = true
-      console.log("Bible database initialized:", bibleDatabase.getStats())
-    } catch (error) {
-      console.error("Error initializing Bible database:", error)
-      // Create minimal sample data
-      this.createMinimalSampleData()
-      this.isInitialized = true
-    }
-  }
-
-  private async loadBibleData(): Promise<void> {
-    try {
-      // Try to load KJV data
-      const kjvResponse = await fetch("/data/bibles/kjv.json")
-      if (kjvResponse.ok) {
-        const kjvData = await kjvResponse.json()
-        this.importBibleData(kjvData)
-        console.log("Loaded KJV Bible data")
+      const translationsPath = path.join(this.dataDir, "translations.json")
+      if (fs.existsSync(translationsPath)) {
+        const data = fs.readFileSync(translationsPath, "utf-8")
+        this.translations = JSON.parse(data)
       }
     } catch (error) {
-      console.log("Could not load KJV data:", error)
+      console.warn("Could not load translations index:", error)
+      this.translations = []
+    }
+  }
+
+  private loadStats() {
+    try {
+      const statsPath = path.join(this.dataDir, "bible-stats.json")
+      if (fs.existsSync(statsPath)) {
+        const data = fs.readFileSync(statsPath, "utf-8")
+        this.stats = JSON.parse(data)
+      }
+    } catch (error) {
+      console.warn("Could not load Bible stats:", error)
+      this.stats = null
+    }
+  }
+
+  private loadBibleData(translationId = "kjv") {
+    if (this.bibleData.has(translationId)) {
+      return this.bibleData.get(translationId)
     }
 
     try {
-      // Try to load sample data
-      const sampleResponse = await fetch("/data/bibles/kjv-sample.json")
-      if (sampleResponse.ok) {
-        const sampleData = await sampleResponse.json()
-        this.importBibleData(sampleData)
-        console.log("Loaded sample Bible data")
+      const translation = this.translations.find((t) => t.id === translationId)
+      if (!translation) {
+        throw new Error(`Translation ${translationId} not found`)
       }
+
+      const biblePath = path.join(this.dataDir, translation.filename)
+      if (!fs.existsSync(biblePath)) {
+        throw new Error(`Bible file not found: ${translation.filename}`)
+      }
+
+      const data = fs.readFileSync(biblePath, "utf-8")
+      const bibleData = JSON.parse(data)
+      this.bibleData.set(translationId, bibleData)
+      return bibleData
     } catch (error) {
-      console.log("Could not load sample data:", error)
+      console.error(`Error loading Bible data for ${translationId}:`, error)
+      return null
     }
   }
 
-  private importBibleData(data: any): void {
-    if (data.verses && Array.isArray(data.verses)) {
-      for (const verse of data.verses) {
-        bibleDatabase.addVerse(verse.translationId, verse.bookId, verse.chapter, verse.verse, verse.text)
+  async getAvailableTranslations(): Promise<BibleTranslation[]> {
+    return this.translations.filter((t) => t.available)
+  }
+
+  async getBibleStats(): Promise<BibleStats | null> {
+    return this.stats
+  }
+
+  async getChapter(book: string, chapter: number, translation = "kjv"): Promise<BibleChapter | null> {
+    try {
+      const bibleData = this.loadBibleData(translation)
+      if (!bibleData || !bibleData.books[book] || !bibleData.books[book][chapter]) {
+        return null
       }
-    }
-  }
 
-  private createMinimalSampleData(): void {
-    // Create essential verses for testing
-    const essentialVerses = [
-      {
-        translationId: "kjv",
-        bookId: "joh",
-        chapter: 3,
-        verse: 16,
-        text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
-      },
-      {
-        translationId: "kjv",
-        bookId: "psa",
-        chapter: 23,
-        verse: 1,
-        text: "The LORD is my shepherd; I shall not want.",
-      },
-      {
-        translationId: "kjv",
-        bookId: "rom",
-        chapter: 8,
-        verse: 28,
-        text: "And we know that all things work together for good to them that love God, to them who are the called according to his purpose.",
-      },
-    ]
+      const chapterData = bibleData.books[book][chapter]
+      const verses: BibleVerse[] = Object.entries(chapterData).map(([verseNum, text]) => ({
+        book,
+        chapter,
+        verse: Number.parseInt(verseNum),
+        text: text as string,
+        translation: bibleData.translation,
+      }))
 
-    for (const verse of essentialVerses) {
-      bibleDatabase.addVerse(verse.translationId, verse.bookId, verse.chapter, verse.verse, verse.text)
-    }
-
-    console.log("Created minimal sample Bible data")
-  }
-
-  // Get available translations
-  getAvailableTranslations(): BibleTranslation[] {
-    return bibleDatabase.getTranslations()
-  }
-
-  // Get chapter
-  async getChapter(book: string, chapter: number, translation = "kjv"): Promise<BibleChapterData | null> {
-    await this.initializeDatabase()
-
-    const bookData = bibleDatabase.getBook(book)
-    if (!bookData) {
-      console.error(`Book not found: ${book}`)
-      return null
-    }
-
-    const chapterData = bibleDatabase.getChapter(translation, bookData.id, chapter)
-    if (!chapterData) {
-      console.error(`Chapter not found: ${book} ${chapter} (${translation})`)
-      return null
-    }
-
-    return chapterData
-  }
-
-  // Get single verse
-  async getVerse(reference: string, translation = "kjv"): Promise<BibleSearchResult | null> {
-    await this.initializeDatabase()
-
-    const parsed = this.parseReference(reference)
-    if (!parsed) {
-      return null
-    }
-
-    const bookData = bibleDatabase.getBook(parsed.book)
-    if (!bookData) {
-      return null
-    }
-
-    const verse = bibleDatabase.getVerse(translation, bookData.id, parsed.chapter, parsed.verse)
-    if (!verse) {
-      return null
-    }
-
-    return {
-      reference,
-      text: verse.text,
-      translation: verse.translationId.toUpperCase(),
-      book: parsed.book,
-      chapter: parsed.chapter,
-      verse: parsed.verse,
-    }
-  }
-
-  // Search verses
-  async searchBible(query: string, translation = "kjv", limit = 50): Promise<BibleSearchResult[]> {
-    await this.initializeDatabase()
-
-    const verses = bibleDatabase.searchVerses(query, translation, limit)
-    const results: BibleSearchResult[] = []
-
-    for (const verse of verses) {
-      const book = bibleDatabase.getBooks().find((b) => b.id === verse.bookId)
-      if (book) {
-        results.push({
-          reference: `${book.name} ${verse.chapter}:${verse.verse}`,
-          text: verse.text,
-          translation: verse.translationId.toUpperCase(),
-          book: book.name,
-          chapter: verse.chapter,
-          verse: verse.verse,
-        })
-      }
-    }
-
-    return results
-  }
-
-  // Get daily verse
-  async getDailyVerse(translation = "kjv"): Promise<BibleSearchResult | null> {
-    const popularVerses = [
-      "John 3:16",
-      "Romans 8:28",
-      "Philippians 4:13",
-      "Jeremiah 29:11",
-      "Psalm 23:1",
-      "Isaiah 40:31",
-      "Proverbs 3:5",
-      "Matthew 6:33",
-      "1 Peter 5:7",
-      "Ephesians 2:8",
-    ]
-
-    // Select verse based on day of year for consistency
-    const today = new Date()
-    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000)
-    const selectedReference = popularVerses[dayOfYear % popularVerses.length]
-
-    return await this.getVerse(selectedReference, translation)
-  }
-
-  // Parse reference like "John 3:16"
-  private parseReference(reference: string): { book: string; chapter: number; verse: number } | null {
-    const match = reference.match(/^(.+?)\s+(\d+):(\d+)/)
-    if (match) {
       return {
-        book: match[1].trim(),
-        chapter: Number.parseInt(match[2]),
-        verse: Number.parseInt(match[3]),
+        book,
+        chapter,
+        verses: verses.sort((a, b) => a.verse - b.verse),
+        translation: bibleData.translation,
       }
+    } catch (error) {
+      console.error("Error getting chapter:", error)
+      return null
     }
-    return null
   }
 
-  // Get all books
-  getBooks() {
-    return bibleDatabase.getBooks()
+  async getVerse(book: string, chapter: number, verse: number, translation = "kjv"): Promise<BibleVerse | null> {
+    try {
+      const bibleData = this.loadBibleData(translation)
+      if (
+        !bibleData ||
+        !bibleData.books[book] ||
+        !bibleData.books[book][chapter] ||
+        !bibleData.books[book][chapter][verse]
+      ) {
+        return null
+      }
+
+      return {
+        book,
+        chapter,
+        verse,
+        text: bibleData.books[book][chapter][verse],
+        translation: bibleData.translation,
+      }
+    } catch (error) {
+      console.error("Error getting verse:", error)
+      return null
+    }
   }
 
-  // Get database statistics
-  getStats() {
-    return bibleDatabase.getStats()
+  async searchBible(query: string, translation = "kjv", limit = 50): Promise<BibleVerse[]> {
+    try {
+      const bibleData = this.loadBibleData(translation)
+      if (!bibleData) {
+        return []
+      }
+
+      const results: BibleVerse[] = []
+      const searchTerm = query.toLowerCase()
+
+      for (const [book, chapters] of Object.entries(bibleData.books)) {
+        for (const [chapterNum, verses] of Object.entries(chapters as any)) {
+          for (const [verseNum, text] of Object.entries(verses as any)) {
+            if ((text as string).toLowerCase().includes(searchTerm)) {
+              results.push({
+                book,
+                chapter: Number.parseInt(chapterNum),
+                verse: Number.parseInt(verseNum),
+                text: text as string,
+                translation: bibleData.translation,
+              })
+
+              if (results.length >= limit) {
+                return results
+              }
+            }
+          }
+        }
+      }
+
+      return results
+    } catch (error) {
+      console.error("Error searching Bible:", error)
+      return []
+    }
   }
 
-  // Check if database is ready
-  isReady(): boolean {
-    return this.isInitialized && bibleDatabase.getStats().verses > 0
+  async getDailyVerse(date?: Date): Promise<BibleVerse | null> {
+    try {
+      if (!this.stats || !this.stats.sampleVerses.length) {
+        return null
+      }
+
+      // Use date to determine which verse to show
+      const today = date || new Date()
+      const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000)
+      const verseIndex = dayOfYear % this.stats.sampleVerses.length
+      const sampleVerse = this.stats.sampleVerses[verseIndex]
+
+      return await this.getVerse(sampleVerse.book, sampleVerse.chapter, sampleVerse.verse)
+    } catch (error) {
+      console.error("Error getting daily verse:", error)
+      return null
+    }
+  }
+
+  async getRandomVerse(translation = "kjv"): Promise<BibleVerse | null> {
+    try {
+      const bibleData = this.loadBibleData(translation)
+      if (!bibleData) {
+        return null
+      }
+
+      const books = Object.keys(bibleData.books)
+      const randomBook = books[Math.floor(Math.random() * books.length)]
+      const chapters = Object.keys(bibleData.books[randomBook])
+      const randomChapter = chapters[Math.floor(Math.random() * chapters.length)]
+      const verses = Object.keys(bibleData.books[randomBook][randomChapter])
+      const randomVerse = verses[Math.floor(Math.random() * verses.length)]
+
+      return await this.getVerse(randomBook, Number.parseInt(randomChapter), Number.parseInt(randomVerse), translation)
+    } catch (error) {
+      console.error("Error getting random verse:", error)
+      return null
+    }
+  }
+
+  async getBookList(translation = "kjv"): Promise<string[]> {
+    try {
+      const bibleData = this.loadBibleData(translation)
+      if (!bibleData) {
+        return []
+      }
+
+      return Object.keys(bibleData.books).sort()
+    } catch (error) {
+      console.error("Error getting book list:", error)
+      return []
+    }
+  }
+
+  async getChapterList(book: string, translation = "kjv"): Promise<number[]> {
+    try {
+      const bibleData = this.loadBibleData(translation)
+      if (!bibleData || !bibleData.books[book]) {
+        return []
+      }
+
+      return Object.keys(bibleData.books[book])
+        .map((ch) => Number.parseInt(ch))
+        .sort((a, b) => a - b)
+    } catch (error) {
+      console.error("Error getting chapter list:", error)
+      return []
+    }
   }
 }
 
-// Export singleton instance
 export const bibleLocalService = new BibleLocalService()

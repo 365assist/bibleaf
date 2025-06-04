@@ -1,6 +1,220 @@
-// Script to download and import public domain Bible translations
 const fs = require("fs")
 const path = require("path")
+
+console.log("🚀 Starting Bible Database Setup...")
+
+// Create data directory if it doesn't exist
+const dataDir = path.join(process.cwd(), "data")
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true })
+  console.log("📁 Created data directory")
+}
+
+// Bible books structure
+const bibleBooks = {
+  oldTestament: [
+    "Genesis",
+    "Exodus",
+    "Leviticus",
+    "Numbers",
+    "Deuteronomy",
+    "Joshua",
+    "Judges",
+    "Ruth",
+    "1 Samuel",
+    "2 Samuel",
+    "1 Kings",
+    "2 Kings",
+    "1 Chronicles",
+    "2 Chronicles",
+    "Ezra",
+    "Nehemiah",
+    "Esther",
+    "Job",
+    "Psalms",
+    "Proverbs",
+    "Ecclesiastes",
+    "Song of Solomon",
+    "Isaiah",
+    "Jeremiah",
+    "Lamentations",
+    "Ezekiel",
+    "Daniel",
+    "Hosea",
+    "Joel",
+    "Amos",
+    "Obadiah",
+    "Jonah",
+    "Micah",
+    "Nahum",
+    "Habakkuk",
+    "Zephaniah",
+    "Haggai",
+    "Zechariah",
+    "Malachi",
+  ],
+  newTestament: [
+    "Matthew",
+    "Mark",
+    "Luke",
+    "John",
+    "Acts",
+    "Romans",
+    "1 Corinthians",
+    "2 Corinthians",
+    "Galatians",
+    "Ephesians",
+    "Philippians",
+    "Colossians",
+    "1 Thessalonians",
+    "2 Thessalonians",
+    "1 Timothy",
+    "2 Timothy",
+    "Titus",
+    "Philemon",
+    "Hebrews",
+    "James",
+    "1 Peter",
+    "2 Peter",
+    "1 John",
+    "2 John",
+    "3 John",
+    "Jude",
+    "Revelation",
+  ],
+}
+
+// Sample Bible data (KJV - Public Domain)
+const sampleBibleData = {
+  translation: "KJV",
+  name: "King James Version",
+  language: "English",
+  year: 1611,
+  copyright: "Public Domain",
+  books: {},
+}
+
+// Add sample verses for testing
+const sampleVerses = {
+  Genesis: {
+    1: {
+      1: "In the beginning God created the heaven and the earth.",
+      2: "And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+      3: "And God said, Let there be light: and there was light.",
+    },
+  },
+  John: {
+    3: {
+      16: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
+      17: "For God sent not his Son into the world to condemn the world; but that the world through him might be saved.",
+    },
+    14: {
+      6: "Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me.",
+    },
+  },
+  Romans: {
+    8: {
+      28: "And we know that all things work together for good to them that love God, to them who are the called according to his purpose.",
+    },
+  },
+  Philippians: {
+    4: {
+      13: "I can do all things through Christ which strengtheneth me.",
+    },
+  },
+  Psalms: {
+    23: {
+      1: "The LORD is my shepherd; I shall not want.",
+      2: "He maketh me to lie down in green pastures: he leadeth me beside the still waters.",
+      3: "He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake.",
+      4: "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me.",
+    },
+  },
+  Matthew: {
+    5: {
+      3: "Blessed are the poor in spirit: for theirs is the kingdom of heaven.",
+      4: "Blessed are they that mourn: for they shall be comforted.",
+      5: "Blessed are the meek: for they shall inherit the earth.",
+    },
+  },
+  "1 Corinthians": {
+    13: {
+      4: "Charity suffereth long, and is kind; charity envieth not; charity vaunteth not itself, is not puffed up.",
+      5: "Doth not behave itself unseemly, seeketh not her own, is not easily provoked, thinketh no evil;",
+      13: "And now abideth faith, hope, charity, these three; but the greatest of these is charity.",
+    },
+  },
+}
+
+// Add sample verses to the bible data
+Object.keys(sampleVerses).forEach((book) => {
+  sampleBibleData.books[book] = sampleVerses[book]
+})
+
+// Save the sample Bible data
+const bibleFilePath = path.join(dataDir, "kjv-bible.json")
+fs.writeFileSync(bibleFilePath, JSON.stringify(sampleBibleData, null, 2))
+
+console.log("✅ Sample KJV Bible data created successfully!")
+console.log(`📖 Saved to: ${bibleFilePath}`)
+
+// Create a translations index
+const translationsIndex = [
+  {
+    id: "kjv",
+    name: "King James Version",
+    abbreviation: "KJV",
+    language: "English",
+    year: 1611,
+    copyright: "Public Domain",
+    filename: "kjv-bible.json",
+    available: true,
+  },
+]
+
+const indexFilePath = path.join(dataDir, "translations.json")
+fs.writeFileSync(indexFilePath, JSON.stringify(translationsIndex, null, 2))
+
+console.log("✅ Translations index created!")
+console.log(`📋 Saved to: ${indexFilePath}`)
+
+// Create Bible statistics
+const stats = {
+  totalTranslations: 1,
+  totalBooks: Object.keys(sampleBibleData.books).length,
+  totalChapters: Object.values(sampleBibleData.books).reduce((acc, book) => acc + Object.keys(book).length, 0),
+  totalVerses: Object.values(sampleBibleData.books).reduce((acc, book) => {
+    return acc + Object.values(book).reduce((chapterAcc, chapter) => chapterAcc + Object.keys(chapter).length, 0)
+  }, 0),
+  lastUpdated: new Date().toISOString(),
+  availableBooks: Object.keys(sampleBibleData.books),
+  sampleVerses: [
+    { book: "John", chapter: 3, verse: 16, text: sampleVerses.John[3][16] },
+    { book: "Psalms", chapter: 23, verse: 1, text: sampleVerses.Psalms[23][1] },
+    { book: "Philippians", chapter: 4, verse: 13, text: sampleVerses.Philippians[4][13] },
+  ],
+}
+
+const statsFilePath = path.join(dataDir, "bible-stats.json")
+fs.writeFileSync(statsFilePath, JSON.stringify(stats, null, 2))
+
+console.log("✅ Bible statistics created!")
+console.log(`📊 Saved to: ${statsFilePath}`)
+
+console.log("\n🎉 Bible Database Setup Complete!")
+console.log("\n📈 Database Statistics:")
+console.log(`   📚 Translations: ${stats.totalTranslations}`)
+console.log(`   📖 Books: ${stats.totalBooks}`)
+console.log(`   📄 Chapters: ${stats.totalChapters}`)
+console.log(`   📝 Verses: ${stats.totalVerses}`)
+console.log("\n🔗 Next Steps:")
+console.log("   1. Visit /test-local-bible to test the database")
+console.log('   2. Search for verses like "love", "faith", or "hope"')
+console.log("   3. View daily verses and chapter navigation")
+console.log("\n💡 To expand the database:")
+console.log("   - Add more public domain translations")
+console.log("   - Import from Bible Gateway or other sources")
+console.log("   - Use the Bible API service for real-time data")
 
 // Bible download sources (public domain)
 const BIBLE_SOURCES = {

@@ -3,32 +3,21 @@ import { bibleLocalService } from "@/lib/bible-local-service"
 
 export async function GET() {
   try {
-    const stats = bibleLocalService.getStats()
-    const translations = bibleLocalService.getAvailableTranslations()
-    const books = bibleLocalService.getBooks()
+    const stats = await bibleLocalService.getBibleStats()
+    const translations = await bibleLocalService.getAvailableTranslations()
+
+    if (!stats) {
+      return NextResponse.json({ error: "Bible statistics not available" }, { status: 404 })
+    }
 
     return NextResponse.json({
       success: true,
-      database: {
-        isReady: bibleLocalService.isReady(),
-        ...stats,
-      },
-      translations: translations.length,
-      books: books.length,
-      availableTranslations: translations,
-      testaments: {
-        old: books.filter((b) => b.testament === "old").length,
-        new: books.filter((b) => b.testament === "new").length,
-      },
+      stats,
+      translations,
+      timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error("Error fetching Bible stats:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch Bible statistics",
-      },
-      { status: 500 },
-    )
+    console.error("Error getting Bible stats:", error)
+    return NextResponse.json({ error: "Failed to get Bible statistics" }, { status: 500 })
   }
 }
