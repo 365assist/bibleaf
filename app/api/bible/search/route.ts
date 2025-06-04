@@ -1,24 +1,25 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { bibleAPIService } from "@/lib/bible-api-service"
+import { bibleLocalService } from "@/lib/bible-local-service"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { query, translation = "ESV", limit = 10 } = body
+    const { query, translation = "kjv", limit = 10 } = body
 
     if (!query || typeof query !== "string") {
       return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
     }
 
-    console.log(`Searching Bible: "${query}" in ${translation}`)
-    const results = await bibleAPIService.searchBible(query, translation, limit)
+    console.log(`Searching local Bible: "${query}" in ${translation}`)
+    const results = await bibleLocalService.searchBible(query, translation, limit)
 
     return NextResponse.json({
       success: true,
       results,
       query,
-      translation,
+      translation: translation.toUpperCase(),
       count: results.length,
+      source: "local-database",
     })
   } catch (error) {
     console.error("Error searching Bible:", error)

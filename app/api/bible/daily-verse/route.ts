@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { bibleAPIService } from "@/lib/bible-api-service"
+import { bibleLocalService } from "@/lib/bible-local-service"
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const translation = searchParams.get("translation") || "ESV"
+    const translation = searchParams.get("translation") || "kjv"
 
     console.log(`Fetching daily verse in ${translation}`)
-    const dailyVerse = await bibleAPIService.getDailyVerse(translation)
+    const dailyVerse = await bibleLocalService.getDailyVerse(translation)
 
     if (!dailyVerse) {
       return NextResponse.json({ error: "Daily verse not available" }, { status: 404 })
@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
       success: true,
       verse: dailyVerse,
       date: new Date().toISOString().split("T")[0],
+      source: "local-database",
     })
   } catch (error) {
     console.error("Error fetching daily verse:", error)

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { bibleAPIService } from "@/lib/bible-api-service"
+import { bibleLocalService } from "@/lib/bible-local-service"
 import { BibleService } from "@/lib/bible-service"
 
 export async function GET(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const book = searchParams.get("book")
     const chapterParam = searchParams.get("chapter")
-    const translation = searchParams.get("translation") || "ESV"
+    const translation = searchParams.get("translation") || "kjv"
 
     if (!book || !chapterParam) {
       return NextResponse.json({ error: "Book and chapter parameters are required" }, { status: 400 })
@@ -28,9 +28,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid chapter number" }, { status: 400 })
     }
 
-    // Try to get chapter from Bible API service
+    // Get chapter from local Bible service
     console.log(`Fetching ${book} ${chapter} in ${translation}`)
-    const chapterData = await bibleAPIService.getChapter(book, chapter, translation)
+    const chapterData = await bibleLocalService.getChapter(book, chapter, translation)
 
     if (!chapterData) {
       return NextResponse.json({ error: "Chapter not found" }, { status: 404 })
@@ -41,7 +41,10 @@ export async function GET(request: NextRequest) {
     const prevChapter = BibleService.getPreviousChapter(book, chapter)
 
     const response = {
-      ...chapterData,
+      book: bookInfo.name,
+      chapter,
+      translation: translation.toUpperCase(),
+      verses: chapterData.verses,
       navigation: {
         previous: prevChapter,
         next: nextChapter,
