@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2, Sparkles } from "lucide-react"
 import { AuthService } from "@/lib/auth"
 
 export default function SignupPage() {
@@ -50,21 +50,43 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 font-bold text-2xl mb-2">
-            <span className="text-primary">Bible</span>
-            <span className="bg-primary text-primary-foreground px-1 rounded">AF</span>
+    <div className="min-h-screen relative flex items-center justify-center px-4">
+      {/* Divine Sunset Background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('/images/divine-sunset-mountains.png')",
+        }}
+      />
+
+      {/* Gradient Overlay for Better Readability */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-orange-900/40" />
+
+      {/* Subtle Pattern Overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
+
+      <div className="relative z-10 w-full max-w-md space-y-8">
+        {/* Header Section */}
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center gap-2 font-bold text-3xl mb-4">
+            <Sparkles className="text-yellow-300 animate-pulse" size={28} />
+            <span className="text-white drop-shadow-lg">Bible</span>
+            <span className="bg-gradient-to-r from-yellow-300 to-orange-300 text-purple-900 px-2 py-1 rounded-lg shadow-lg font-black">
+              AF
+            </span>
+            <Sparkles className="text-yellow-300 animate-pulse" size={28} />
           </div>
-          <h2 className="text-xl font-semibold">Create your account</h2>
-          <p className="text-muted-foreground">Start your spiritual journey today</p>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-white drop-shadow-lg">Begin Your Spiritual Journey</h2>
+            <p className="text-blue-100 drop-shadow-md text-lg">Join thousands discovering God's wisdom through AI</p>
+          </div>
         </div>
 
-        <div className="bg-card border rounded-lg p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form Card */}
+        <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-8 shadow-2xl">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">
+              <label htmlFor="name" className="block text-sm font-semibold mb-2 text-white drop-shadow-sm">
                 Full Name
               </label>
               <input
@@ -73,14 +95,14 @@ export default function SignupPage() {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 bg-white/90 backdrop-blur-sm border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-gray-500"
                 placeholder="Enter your full name"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">
-                Email
+              <label htmlFor="email" className="block text-sm font-semibold mb-2 text-white drop-shadow-sm">
+                Email Address
               </label>
               <input
                 id="email"
@@ -88,13 +110,13 @@ export default function SignupPage() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Enter your email"
+                className="w-full px-4 py-3 bg-white/90 backdrop-blur-sm border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-gray-500"
+                placeholder="Enter your email address"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-1">
+              <label htmlFor="password" className="block text-sm font-semibold mb-2 text-white drop-shadow-sm">
                 Password
               </label>
               <div className="relative">
@@ -104,21 +126,21 @@ export default function SignupPage() {
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Create a password"
+                  className="w-full px-4 py-3 pr-12 bg-white/90 backdrop-blur-sm border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-gray-500"
+                  placeholder="Create a secure password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold mb-2 text-white drop-shadow-sm">
                 Confirm Password
               </label>
               <input
@@ -127,41 +149,74 @@ export default function SignupPage() {
                 required
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 bg-white/90 backdrop-blur-sm border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-gray-500"
                 placeholder="Confirm your password"
               />
             </div>
 
-            {error && <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">{error}</div>}
+            {error && (
+              <div className="p-4 bg-red-500/20 backdrop-blur-sm text-red-100 rounded-xl text-sm border border-red-400/30">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-purple-900 rounded-xl hover:from-yellow-300 hover:to-orange-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="animate-spin" size={16} />
-                  Creating account...
+                  <Loader2 className="animate-spin" size={20} />
+                  Creating Your Account...
                 </>
               ) : (
-                "Create Account"
+                <>
+                  <Sparkles size={20} />
+                  Create My Account
+                </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
+          {/* Sign In Link */}
+          <div className="mt-8 text-center">
+            <p className="text-blue-100 drop-shadow-sm">
               Already have an account?{" "}
-              <Link href="/auth/login" className="text-primary hover:text-primary/80">
-                Sign in
+              <Link
+                href="/auth/login"
+                className="text-yellow-300 hover:text-yellow-200 font-semibold transition-colors underline decoration-2 underline-offset-2"
+              >
+                Sign In Here
               </Link>
             </p>
           </div>
         </div>
 
-        <div className="text-center text-xs text-muted-foreground">
-          By creating an account, you agree to our Terms of Service and Privacy Policy
+        {/* Terms and Privacy */}
+        <div className="text-center">
+          <p className="text-xs text-blue-200/80 drop-shadow-sm leading-relaxed">
+            By creating an account, you agree to our{" "}
+            <Link href="/terms" className="text-yellow-300 hover:text-yellow-200 underline">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-yellow-300 hover:text-yellow-200 underline">
+              Privacy Policy
+            </Link>
+          </p>
+        </div>
+
+        {/* Inspirational Quote */}
+        <div className="text-center mt-8">
+          <blockquote className="text-blue-100/90 italic text-sm drop-shadow-sm">
+            "For I know the plans I have for you," declares the LORD,
+            <br />
+            "plans to prosper you and not to harm you,
+            <br />
+            to give you hope and a future."
+            <footer className="text-yellow-300 font-semibold mt-2">— Jeremiah 29:11</footer>
+          </blockquote>
         </div>
       </div>
     </div>
