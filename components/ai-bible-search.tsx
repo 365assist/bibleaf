@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Search, Loader2, BookOpen, Heart, Sparkles } from "lucide-react"
+import { Search, Loader2, BookOpen, Heart, Sparkles } from 'lucide-react'
 import Link from "next/link"
 import Image from "next/image"
 import VerseContextViewer from "./verse-context-viewer"
@@ -29,6 +29,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
   const [limitExceeded, setLimitExceeded] = useState(false)
   const [isFallback, setIsFallback] = useState(false)
 
+  // Update the default translation from ESV to KJV or NIV
   const [searchFilters, setSearchFilters] = useState({
     testament: "all", // 'all', 'old', 'new'
     books: [] as string[],
@@ -519,7 +520,7 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
                   >
                     <option value="NIV">NIV</option>
                     <option value="ESV">ESV</option>
-                    <option value="KJV">KJV</option>
+                    <option value="KJV">King James</option>
                     <option value="NASB">NASB</option>
                     <option value="NLT">NLT</option>
                   </select>

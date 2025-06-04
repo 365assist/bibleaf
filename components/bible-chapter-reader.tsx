@@ -33,7 +33,7 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
   const [error, setError] = useState("")
   const [selectedVerse, setSelectedVerse] = useState<number | null>(highlightVerse || null)
   const [translation, setTranslation] = useState("kjv")
-  const [availableTranslations, setAvailableTranslations] = useState<string[]>(["kjv"])
+  const [availableTranslations, setAvailableTranslations] = useState<string[]>(["kjv", "niv"])
 
   useEffect(() => {
     fetchChapter()
