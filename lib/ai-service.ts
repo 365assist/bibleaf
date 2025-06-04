@@ -733,14 +733,25 @@ Query: "${query}"`,
   private findExactVerseReferences(query: string): AISearchResult[] {
     console.log(`Searching for exact verse references in: "${query}"`)
 
-    // Comprehensive verse database with exact references
+    // Update the exact verses database with better key matching
     const exactVerses: { [key: string]: { text: string; context: string } } = {
-      // John
+      // Add multiple key variations for John 3:16
       "john 3:16": {
         text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
         context:
-          "The most famous verse in the Bible, summarizing the gospel message. God's love (agape) is demonstrated through the ultimate sacrifice - giving His Son for humanity's salvation. This verse encapsulates the core of Christianity: God's love, Christ's sacrifice, faith's requirement, and eternal life's promise.",
+          "The most famous verse in the Bible, summarizing the gospel message. God's love (agape) is demonstrated through the ultimate sacrifice - giving His Son for humanity's salvation.",
       },
+      "john3:16": {
+        text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+        context:
+          "The most famous verse in the Bible, summarizing the gospel message. God's love (agape) is demonstrated through the ultimate sacrifice - giving His Son for humanity's salvation.",
+      },
+      "john 3 16": {
+        text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+        context:
+          "The most famous verse in the Bible, summarizing the gospel message. God's love (agape) is demonstrated through the ultimate sacrifice - giving His Son for humanity's salvation.",
+      },
+      // John
       "john 14:6": {
         text: "Jesus answered, 'I am the way and the truth and the life. No one comes to the Father except through me.'",
         context:
@@ -880,11 +891,20 @@ Query: "${query}"`,
     }
 
     const results: AISearchResult[] = []
-    const queryNormalized = query.toLowerCase().trim()
+    const queryNormalized = query.toLowerCase().trim().replace(/\s+/g, " ")
 
-    // Check for direct matches
+    // Check for direct matches with multiple variations
     for (const [reference, verseData] of Object.entries(exactVerses)) {
-      if (queryNormalized.includes(reference) || reference.includes(queryNormalized)) {
+      const refNormalized = reference.replace(/\s+/g, " ")
+      const refNoSpaces = reference.replace(/\s+/g, "")
+      const queryNoSpaces = queryNormalized.replace(/\s+/g, "")
+
+      if (
+        queryNormalized.includes(refNormalized) ||
+        refNormalized.includes(queryNormalized) ||
+        queryNoSpaces.includes(refNoSpaces) ||
+        refNoSpaces.includes(queryNoSpaces)
+      ) {
         results.push({
           reference: this.formatReference(reference),
           text: verseData.text,

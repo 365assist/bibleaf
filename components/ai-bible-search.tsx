@@ -185,21 +185,46 @@ export default function AIBibleSearch({ userId, onSaveVerse, onSearchComplete }:
 
   // Client-side fallback results
   const getFallbackResults = (query: string): SearchResult[] => {
-    const queryLower = query.toLowerCase()
+    const queryLower = query.toLowerCase().replace(/\s+/g, "")
 
-    if (queryLower.includes("love")) {
+    // Handle specific verse references first
+    if (queryLower.includes("john3:16") || queryLower.includes("john316")) {
       return [
         {
-          reference: "1 John 4:8",
-          text: "Whoever does not love does not know God, because God is love.",
-          relevanceScore: 0.9,
-          context: "John declares that love is not just an attribute of God, but His very essence.",
+          reference: "John 3:16",
+          text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+          relevanceScore: 1.0,
+          context:
+            "The most famous verse in the Bible, summarizing the gospel message of God's love and salvation through Christ.",
         },
+      ]
+    }
+
+    if (queryLower.includes("romans8:28") || queryLower.includes("romans828")) {
+      return [
+        {
+          reference: "Romans 8:28",
+          text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.",
+          relevanceScore: 1.0,
+          context: "Paul's assurance that God sovereignly works all circumstances for the ultimate good of believers.",
+        },
+      ]
+    }
+
+    // Handle thematic searches
+    if (queryLower.includes("love")) {
+      return [
         {
           reference: "John 3:16",
           text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
           relevanceScore: 0.95,
           context: "The most famous verse about God's love for humanity.",
+        },
+        {
+          reference: "1 John 4:8",
+          text: "Whoever does not love does not know God, because God is love.",
+          relevanceScore: 0.9,
+          context: "John declares that love is not just an attribute of God, but His very essence.",
         },
       ]
     }
