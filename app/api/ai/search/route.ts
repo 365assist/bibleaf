@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
     console.log("Extracted query:", query)
     console.log("Extracted userId:", userId)
 
-    if (!query || !userId) {
-      console.error("Missing required fields:", { query: !!query, userId: !!userId })
+    if (!query) {
+      console.error("Missing required query field")
       return new Response(
         JSON.stringify({
-          error: "Query and user ID are required",
-          received: { query: !!query, userId: !!userId },
+          error: "Query is required",
+          received: { query: !!query },
           results: [],
         }),
         {
@@ -29,26 +29,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("Checking usage limits for user:", userId)
+    // Handle demo users or missing userId
+    const isDemo = !userId || userId === "demo-user"
+    console.log("Is demo user:", isDemo)
 
-    // Check usage limits
-    const usageAllowed = await updateUsageTracking(userId, "search")
-    console.log("Usage allowed:", usageAllowed)
+    // For demo users, skip usage tracking
+    let usageAllowed = true
+    if (!isDemo) {
+      console.log("Checking usage limits for user:", userId)
+      // Check usage limits for authenticated users
+      usageAllowed = await updateUsageTracking(userId, "search")
+      console.log("Usage allowed:", usageAllowed)
 
-    if (!usageAllowed) {
-      console.log("Usage limit exceeded for user:", userId)
-      return new Response(
-        JSON.stringify({
-          error: "Daily search limit exceeded",
-          limitExceeded: true,
-          message: "You've reached your daily search limit. Upgrade your plan for unlimited searches.",
-          results: [],
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        },
-      )
+      if (!usageAllowed) {
+        console.log("Usage limit exceeded for user:", userId)
+        return new Response(
+          JSON.stringify({
+            error: "Daily search limit exceeded",
+            limitExceeded: true,
+            message: "You've reached your daily search limit. Upgrade your plan for unlimited searches.",
+            results: [],
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
     }
 
     console.log("Performing AI Bible search")
@@ -62,6 +69,7 @@ export async function POST(request: NextRequest) {
       query,
       results: searchResults || [],
       timestamp: new Date().toISOString(),
+      demo: isDemo,
     }
 
     console.log("Sending response:", response)

@@ -28,7 +28,10 @@ export default function InteractiveDemo() {
       const response = await fetch("/api/ai/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: searchQuery }),
+        body: JSON.stringify({
+          query: searchQuery,
+          userId: "demo-user", // Add a demo userId for the interactive demo
+        }),
       })
 
       if (response.ok) {
@@ -56,7 +59,10 @@ export default function InteractiveDemo() {
       const response = await fetch("/api/ai/guidance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation: guidanceQuery }),
+        body: JSON.stringify({
+          situation: guidanceQuery,
+          userId: "demo-user", // Add a demo userId for the interactive demo
+        }),
       })
 
       if (response.ok) {
