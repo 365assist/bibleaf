@@ -166,12 +166,11 @@ class BibleBlobService {
       }
 
       // Try to download from blob storage
-      const blobUrl = `https://blob.vercel-storage.com/bibles/${translationId}.json`
-      const response = await fetch(blobUrl)
+      const response = await fetch(`https://blob.vercel-storage.com/bibles/${translationId}.json`)
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log(`Bible translation ${translationId} not found in blob storage`)
+          console.log(`Bible translation ${translationId} not found in blob storage, using fallback`)
           return this.getFallbackData(translationId)
         }
         throw new Error(`HTTP ${response.status}: ${await response.text()}`)
@@ -214,12 +213,31 @@ class BibleBlobService {
   // Get chapter from Bible translation
   async getChapter(translationId: string, book: string, chapter: number): Promise<BibleChapter | null> {
     try {
+      console.log(`Getting chapter: ${translationId} ${book} ${chapter}`)
+
       const bibleData = await this.downloadBibleTranslation(translationId)
-      if (!bibleData || !bibleData.books[book] || !bibleData.books[book][chapter]) {
+      if (!bibleData) {
+        console.log("No Bible data found")
+        return null
+      }
+
+      console.log("Bible data loaded, available books:", Object.keys(bibleData.books))
+
+      if (!bibleData.books[book]) {
+        console.log(`Book ${book} not found in translation ${translationId}`)
+        return null
+      }
+
+      console.log(`Book ${book} found, available chapters:`, Object.keys(bibleData.books[book]))
+
+      if (!bibleData.books[book][chapter]) {
+        console.log(`Chapter ${chapter} not found in book ${book}`)
         return null
       }
 
       const chapterData = bibleData.books[book][chapter]
+      console.log(`Chapter data found, verses:`, Object.keys(chapterData))
+
       const verses: BibleVerse[] = Object.entries(chapterData).map(([verseNum, text]) => ({
         book,
         chapter,
@@ -382,7 +400,11 @@ class BibleBlobService {
     try {
       const bibleData = await this.downloadBibleTranslation(translationId)
       if (!bibleData) {
-        return []
+        // Return fallback books if no data
+        return Object.entries(this.BIBLE_BOOKS).map(([id, book]) => ({
+          id,
+          ...book,
+        }))
       }
 
       const availableBooks = Object.keys(bibleData.books)
@@ -394,12 +416,17 @@ class BibleBlobService {
         .filter((book) => book.name) // Filter out unknown books
     } catch (error) {
       console.error("Error getting books:", error)
-      return []
+      return Object.entries(this.BIBLE_BOOKS).map(([id, book]) => ({
+        id,
+        ...book,
+      }))
     }
   }
 
   // Get fallback data when blob storage is not available
   private getFallbackData(translationId: string): BibleTranslationData | null {
+    console.log(`Creating fallback data for ${translationId}`)
+
     if (translationId === "kjv") {
       return {
         translation: {
@@ -413,6 +440,13 @@ class BibleBlobService {
         },
         books: {
           john: {
+            1: {
+              1: "In the beginning was the Word, and the Word was with God, and the Word was God.",
+              2: "The same was in the beginning with God.",
+              3: "All things were made by him; and without him was not any thing made that was made.",
+              4: "In him was life; and the life was the light of men.",
+              5: "And the light shineth in darkness; and the darkness comprehended it not.",
+            },
             3: {
               16: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
               17: "For God sent not his Son into the world to condemn the world; but that the world through him might be saved.",
@@ -424,12 +458,69 @@ class BibleBlobService {
               2: "He maketh me to lie down in green pastures: he leadeth me beside the still waters.",
               3: "He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake.",
               4: "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me.",
+              5: "Thou preparest a table before me in the presence of mine enemies: thou anointest my head with oil; my cup runneth over.",
+              6: "Surely goodness and mercy shall follow me all the days of my life: and I will dwell in the house of the LORD for ever.",
+            },
+          },
+          genesis: {
+            1: {
+              1: "In the beginning God created the heaven and the earth.",
+              2: "And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+              3: "And God said, Let there be light: and there was light.",
+            },
+          },
+          romans: {
+            8: {
+              28: "And we know that all things work together for good to them that love God, to them who are the called according to his purpose.",
+            },
+          },
+          philippians: {
+            4: {
+              13: "I can do all things through Christ which strengtheneth me.",
+            },
+          },
+        },
+        metadata: {
+          totalVerses: 18,
+          totalChapters: 5,
+          downloadDate: new Date().toISOString(),
+          source: "fallback-data",
+        },
+      }
+    }
+
+    if (translationId === "web") {
+      return {
+        translation: {
+          id: "web",
+          name: "World English Bible",
+          abbreviation: "WEB",
+          language: "en",
+          year: 2000,
+          copyright: "Public Domain",
+          isPublicDomain: true,
+        },
+        books: {
+          john: {
+            1: {
+              1: "In the beginning was the Word, and the Word was with God, and the Word was God.",
+              2: "The same was in the beginning with God.",
+              3: "All things were made through him. Without him was not anything made that has been made.",
+            },
+            3: {
+              16: "For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.",
+            },
+          },
+          psalms: {
+            23: {
+              1: "Yahweh is my shepherd: I shall lack nothing.",
+              2: "He makes me lie down in green pastures. He leads me beside still waters.",
             },
           },
         },
         metadata: {
           totalVerses: 6,
-          totalChapters: 2,
+          totalChapters: 3,
           downloadDate: new Date().toISOString(),
           source: "fallback-data",
         },
@@ -469,7 +560,7 @@ class BibleBlobService {
     } catch (error) {
       console.error("Error getting Bible stats:", error)
       return {
-        totalTranslations: 1,
+        totalTranslations: 2,
         totalBooks: 66,
         totalChapters: 1189,
         totalVerses: 31102,

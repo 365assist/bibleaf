@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Book, Calendar, Shuffle, BarChart3, ChevronRight, Download, AlertCircle } from "lucide-react"
+import { Search, Book, Calendar, Shuffle, BarChart3, ChevronRight, Download, AlertCircle, Upload } from "lucide-react"
 
 interface BibleVerse {
   book: string
@@ -51,6 +51,7 @@ export default function TestFullBiblePage() {
   const [dailyVerse, setDailyVerse] = useState<BibleVerse | null>(null)
   const [randomVerse, setRandomVerse] = useState<BibleVerse | null>(null)
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -171,6 +172,37 @@ export default function TestFullBiblePage() {
     }
   }
 
+  const uploadSampleData = async () => {
+    setUploading(true)
+    setError(null)
+    try {
+      const response = await fetch("/api/bible/upload-sample", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        // Reload data after upload
+        await loadInitialData()
+        if (selectedTranslation) {
+          await loadBooks()
+        }
+      } else {
+        throw new Error(data.error || "Upload failed")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload sample data")
+      console.error(err)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const loadDailyVerse = async () => {
     try {
       const response = await fetch("/api/bible/daily-verse")
@@ -262,14 +294,44 @@ export default function TestFullBiblePage() {
                 <div className="flex-1">
                   <p className="text-red-600 dark:text-red-400 font-medium">Error</p>
                   <p className="text-red-600 dark:text-red-400 text-sm mt-1">{error}</p>
-                  <Button onClick={() => setError(null)} variant="outline" size="sm" className="mt-3">
-                    Dismiss
-                  </Button>
+                  <div className="flex gap-2 mt-3">
+                    <Button onClick={() => setError(null)} variant="outline" size="sm">
+                      Dismiss
+                    </Button>
+                    <Button onClick={uploadSampleData} disabled={uploading} size="sm">
+                      {uploading ? "Uploading..." : "Upload Sample Data"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Upload Sample Data Button */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload size={24} />
+              Bible Data Setup
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  If you're seeing "Chapter not found" errors, upload sample Bible data to get started.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  This will upload sample chapters from John, Psalms, Genesis, Romans, and Philippians.
+                </p>
+              </div>
+              <Button onClick={uploadSampleData} disabled={uploading}>
+                {uploading ? "Uploading..." : "Upload Sample Data"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Database Statistics */}
         {stats ? (
