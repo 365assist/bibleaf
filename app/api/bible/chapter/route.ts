@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
     const chapterParam = searchParams.get("chapter")
     const translation = searchParams.get("translation") || "kjv"
 
+    console.log("API Request:", { bookParam, chapterParam, translation })
+
     if (!bookParam || !chapterParam) {
       return NextResponse.json(
         {
@@ -32,6 +34,8 @@ export async function GET(request: NextRequest) {
 
     // Normalize book name (e.g., "Psalm" -> "psalms", "1 John" -> "1john")
     const normalizedBook = normalizeBookName(bookParam)
+    console.log("Normalized book:", { original: bookParam, normalized: normalizedBook })
+
     if (!normalizedBook) {
       return NextResponse.json(
         {
@@ -49,26 +53,37 @@ export async function GET(request: NextRequest) {
 
     if (!chapterData) {
       // Try to get available books for debugging
-      const availableBooks = await bibleBlobService.getBooks(translation)
-      console.log(
-        "Available books:",
-        availableBooks.map((b) => b.id),
-      )
+      try {
+        const availableBooks = await bibleBlobService.getBooks(translation)
+        console.log(
+          "Available books:",
+          availableBooks.map((b) => b.id),
+        )
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
-          debug: {
-            requestedBook: bookParam,
-            normalizedBook,
-            chapter,
-            translation,
-            availableBooks: availableBooks.map((b) => b.id).slice(0, 10), // First 10 for debugging
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
+            debug: {
+              requestedBook: bookParam,
+              normalizedBook,
+              chapter,
+              translation,
+              availableBooks: availableBooks.map((b) => b.id).slice(0, 10), // First 10 for debugging
+            },
           },
-        },
-        { status: 404 },
-      )
+          { status: 404 },
+        )
+      } catch (debugError) {
+        console.error("Error getting debug info:", debugError)
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
+          },
+          { status: 404 },
+        )
+      }
     }
 
     // Add navigation info
@@ -120,6 +135,12 @@ export async function GET(request: NextRequest) {
       bookDisplayName: getBookInfo(normalizedBook)?.name || bookParam,
     }
 
+    console.log("API Response success:", {
+      book: response.book,
+      chapter: response.chapter,
+      verseCount: response.verses.length,
+    })
+
     return NextResponse.json(response)
   } catch (error) {
     console.error("Error fetching Bible chapter:", error)
@@ -139,6 +160,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { book: bookParam, chapter: chapterParam, translation = "kjv" } = body
+
+    console.log("POST API Request:", { bookParam, chapterParam, translation })
 
     if (!bookParam || !chapterParam) {
       return NextResponse.json(
@@ -163,6 +186,8 @@ export async function POST(request: NextRequest) {
 
     // Normalize book name (e.g., "Psalm" -> "psalms", "1 John" -> "1john")
     const normalizedBook = normalizeBookName(bookParam)
+    console.log("POST Normalized book:", { original: bookParam, normalized: normalizedBook })
+
     if (!normalizedBook) {
       return NextResponse.json(
         {
@@ -173,33 +198,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`Fetching ${normalizedBook} ${chapter} in ${translation} from blob storage`)
+    console.log(`POST Fetching ${normalizedBook} ${chapter} in ${translation} from blob storage`)
 
     // Get chapter from blob storage
     const chapterData = await bibleBlobService.getChapter(translation, normalizedBook, chapter)
 
     if (!chapterData) {
       // Try to get available books for debugging
-      const availableBooks = await bibleBlobService.getBooks(translation)
-      console.log(
-        "Available books:",
-        availableBooks.map((b) => b.id),
-      )
+      try {
+        const availableBooks = await bibleBlobService.getBooks(translation)
+        console.log(
+          "POST Available books:",
+          availableBooks.map((b) => b.id),
+        )
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
-          debug: {
-            requestedBook: bookParam,
-            normalizedBook,
-            chapter,
-            translation,
-            availableBooks: availableBooks.map((b) => b.id).slice(0, 10), // First 10 for debugging
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
+            debug: {
+              requestedBook: bookParam,
+              normalizedBook,
+              chapter,
+              translation,
+              availableBooks: availableBooks.map((b) => b.id).slice(0, 10), // First 10 for debugging
+            },
           },
-        },
-        { status: 404 },
-      )
+          { status: 404 },
+        )
+      } catch (debugError) {
+        console.error("POST Error getting debug info:", debugError)
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Chapter not found: ${bookParam} ${chapter} in ${translation}`,
+          },
+          { status: 404 },
+        )
+      }
     }
 
     // Add navigation info
@@ -238,7 +274,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.warn("Could not add navigation info:", error)
+      console.warn("POST Could not add navigation info:", error)
     }
 
     const response = {
@@ -251,9 +287,15 @@ export async function POST(request: NextRequest) {
       bookDisplayName: getBookInfo(normalizedBook)?.name || bookParam,
     }
 
+    console.log("POST API Response success:", {
+      book: response.book,
+      chapter: response.chapter,
+      verseCount: response.verses.length,
+    })
+
     return NextResponse.json(response)
   } catch (error) {
-    console.error("Error fetching Bible chapter:", error)
+    console.error("POST Error fetching Bible chapter:", error)
     return NextResponse.json(
       {
         success: false,

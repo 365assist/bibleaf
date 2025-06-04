@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Book, Calendar, Shuffle, BarChart3, ChevronRight, Download } from "lucide-react"
+import { Search, Book, Calendar, Shuffle, BarChart3, ChevronRight, Download, AlertCircle } from "lucide-react"
 
 interface BibleVerse {
   book: string
@@ -82,7 +82,10 @@ export default function TestFullBiblePage() {
   const loadStats = async () => {
     try {
       const response = await fetch("/api/bible/stats")
-      if (!response.ok) throw new Error(`Failed to load stats: ${response.status}`)
+      if (!response.ok) {
+        console.warn(`Failed to load stats: ${response.status}`)
+        return
+      }
 
       const data = await response.json()
       if (data.success && data.stats) {
@@ -96,7 +99,10 @@ export default function TestFullBiblePage() {
   const loadBooks = async () => {
     try {
       const response = await fetch(`/api/bible/books?translation=${selectedTranslation}`)
-      if (!response.ok) throw new Error(`Failed to load books: ${response.status}`)
+      if (!response.ok) {
+        console.warn(`Failed to load books: ${response.status}`)
+        return
+      }
 
       const data = await response.json()
       if (data.success && data.books) {
@@ -116,16 +122,33 @@ export default function TestFullBiblePage() {
     setLoading(true)
     setError(null)
     try {
-      // Use GET request with query parameters instead of POST
+      console.log("Loading chapter:", { selectedBook, selectedChapter, selectedTranslation })
+
+      // Use GET request with query parameters
       const url = `/api/bible/chapter?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}&translation=${selectedTranslation}`
+      console.log("Fetching URL:", url)
+
       const response = await fetch(url)
+      console.log("Response status:", response.status)
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()))
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        console.error("Non-JSON response:", text.substring(0, 200))
+        throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}...`)
+      }
 
       if (!response.ok) {
         const errorData = await response.json()
+        console.error("API Error:", errorData)
         throw new Error(errorData.error || `Failed to load chapter: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log("API Response:", data)
+
       if (data.success && data.verses) {
         setChapter({
           book: data.book,
@@ -133,9 +156,11 @@ export default function TestFullBiblePage() {
           verses: data.verses,
           translation: data.translation,
         })
+        console.log("Chapter loaded successfully:", data.verses.length, "verses")
       } else {
         setChapter(null)
         setError(data.error || "Chapter not found")
+        console.error("Chapter not found:", data)
       }
     } catch (err) {
       console.error("Error loading chapter:", err)
@@ -232,16 +257,22 @@ export default function TestFullBiblePage() {
         {error && (
           <Card className="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
             <CardContent className="pt-6">
-              <p className="text-red-600 dark:text-red-400">{error}</p>
-              <Button onClick={() => setError(null)} variant="outline" size="sm" className="mt-2">
-                Dismiss
-              </Button>
+              <div className="flex items-start gap-3">
+                <AlertCircle className="text-red-600 dark:text-red-400 mt-0.5" size={20} />
+                <div className="flex-1">
+                  <p className="text-red-600 dark:text-red-400 font-medium">Error</p>
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{error}</p>
+                  <Button onClick={() => setError(null)} variant="outline" size="sm" className="mt-3">
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
 
         {/* Database Statistics */}
-        {stats && (
+        {stats ? (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -270,6 +301,15 @@ export default function TestFullBiblePage() {
               </div>
               <div className="text-sm text-muted-foreground text-center">
                 Last updated: {new Date(stats.lastUpdated).toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <div className="text-center text-muted-foreground">
+                <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
+                <p>Loading Bible database statistics...</p>
               </div>
             </CardContent>
           </Card>
