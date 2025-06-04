@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { bibleServerService } from "@/lib/bible-server-service"
+import { bibleBlobService } from "@/lib/bible-blob-service"
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,8 +12,10 @@ export async function GET(request: NextRequest) {
 
     // Handle random verse request
     if (random) {
-      const randomVerse = bibleServerService.getRandomVerse(translation)
-      if (!randomVerse) {
+      console.log(`Getting random verse in ${translation} from blob storage`)
+      const verse = await bibleBlobService.getRandomVerse(translation)
+
+      if (!verse) {
         return NextResponse.json(
           {
             success: false,
@@ -22,9 +24,11 @@ export async function GET(request: NextRequest) {
           { status: 404 },
         )
       }
+
       return NextResponse.json({
         success: true,
-        verse: randomVerse,
+        verse,
+        source: "blob-storage",
       })
     }
 
@@ -33,7 +37,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Book, chapter, and verse parameters are required",
+          error: "Book, chapter, and verse parameters are required (or use random=true)",
         },
         { status: 400 },
       )
@@ -52,7 +56,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const verseData = bibleServerService.getVerse(book, chapter, verse, translation)
+    console.log(`Getting ${book} ${chapter}:${verse} in ${translation} from blob storage`)
+    const verseData = await bibleBlobService.getVerse(translation, book, chapter, verse)
 
     if (!verseData) {
       return NextResponse.json(
@@ -67,6 +72,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       verse: verseData,
+      source: "blob-storage",
     })
   } catch (error) {
     console.error("Error fetching Bible verse:", error)

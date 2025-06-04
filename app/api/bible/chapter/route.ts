@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { bibleServerService } from "@/lib/bible-server-service"
+import { bibleBlobService } from "@/lib/bible-blob-service"
 import { BibleService } from "@/lib/bible-service"
 
 export async function GET(request: NextRequest) {
@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get chapter from server Bible service
-    console.log(`Fetching ${book} ${chapter} in ${translation}`)
-    const chapterData = bibleServerService.getChapter(book, chapter, translation)
+    // Get chapter from blob storage
+    console.log(`Fetching ${book} ${chapter} in ${translation} from blob storage`)
+    const chapterData = await bibleBlobService.getChapter(translation, book, chapter)
 
     if (!chapterData) {
       return NextResponse.json(

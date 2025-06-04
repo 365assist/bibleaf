@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { bibleServerService } from "@/lib/bible-server-service"
+import { bibleBlobService } from "@/lib/bible-blob-service"
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`Searching Bible: "${query}" in ${translation}`)
-    const results = bibleServerService.searchBible(query, translation, limit)
+    console.log(`Searching Bible in blob storage: "${query}" in ${translation}`)
+    const results = await bibleBlobService.searchBible(translation, query, limit)
 
     return NextResponse.json({
       success: true,
@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       query,
       translation: translation.toUpperCase(),
       count: results.length,
+      source: "blob-storage",
     })
   } catch (error) {
     console.error("Error searching Bible:", error)
@@ -57,8 +58,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`Searching Bible: "${query}" in ${translation}`)
-    const results = bibleServerService.searchBible(query, translation, limit)
+    console.log(`Searching Bible in blob storage: "${query}" in ${translation}`)
+    const results = await bibleBlobService.searchBible(translation, query, limit)
 
     return NextResponse.json({
       success: true,
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
       query,
       translation: translation.toUpperCase(),
       count: results.length,
+      source: "blob-storage",
     })
   } catch (error) {
     console.error("Error searching Bible:", error)
