@@ -72,9 +72,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Configure the webhook handler to accept raw body
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
+// Updated configuration for Next.js App Router
+export const runtime = "nodejs"
+// Disable body parsing, we need the raw body for webhook signature verification
+export const dynamic = "force-dynamic"
