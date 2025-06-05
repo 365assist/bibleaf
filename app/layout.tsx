@@ -106,6 +106,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="BibleAF" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -115,16 +116,10 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//js.stripe.com" />
 
         {/* Enhanced PWA configuration */}
-        {/* <link rel="manifest" href="/manifest.json" /> */}
-        {/* <link rel="icon" href="/favicon.ico" sizes="any" /> */}
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-        {/* <link rel="apple-touch-icon" href="/icons/icon-192x192.png" /> */}
         <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
 
         {/* Additional Apple-specific meta tags */}
-        {/* <meta name="apple-mobile-web-app-capable" content="yes" /> */}
-        {/* <meta name="apple-mobile-web-app-status-bar-style" content="default" /> */}
-        {/* <meta name="apple-mobile-web-app-title" content="BibleAF" /> */}
         <meta name="apple-touch-fullscreen" content="yes" />
 
         {/* Microsoft-specific meta tags */}
@@ -151,25 +146,6 @@ export default function RootLayout({
             __html: JSON.stringify(structuredDataArray),
           }}
         />
-
-        {/* Service Worker registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw-enhanced.js')
-                    .then(function(registration) {
-                      console.log('SW registered: ', registration);
-                    })
-                    .catch(function(registrationError) {
-                      console.log('SW registration failed: ', registrationError);
-                    });
-                });
-              }
-            `,
-          }}
-        />
       </head>
       <body className={`${inter.className} font-sans antialiased min-h-screen bg-background`}>
         <ThemeProvider
@@ -192,52 +168,64 @@ export default function RootLayout({
             id="offline-indicator"
             className="hidden fixed top-0 left-0 right-0 bg-yellow-500 text-black text-center py-2 text-sm font-medium z-50"
           >
-            You're currently offline. Some features may be limited.
+            You are currently offline. Some features may be limited.
           </div>
 
           <main id="main-content">{children}</main>
           <Toaster />
-
-          {/* Online/offline detection script */}
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                function updateOnlineStatus() {
-                  const indicator = document.getElementById('offline-indicator');
-                  if (navigator.onLine) {
-                    indicator?.classList.add('hidden');
-                  } else {
-                    indicator?.classList.remove('hidden');
-                  }
-                }
-                
-                window.addEventListener('online', updateOnlineStatus);
-                window.addEventListener('offline', updateOnlineStatus);
-                updateOnlineStatus();
-              `,
-            }}
-          />
         </ThemeProvider>
+
         {/* Service Worker Registration Script */}
-        <Script
-          id="register-sw"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                      console.log('Service Worker registered with scope:', registration.scope);
-                    })
-                    .catch(function(error) {
-                      console.log('Service Worker registration failed:', error);
-                    });
-                });
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                  .then(function(registration) {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                  })
+                  .catch(function(error) {
+                    console.log('Service Worker registration failed:', error);
+                  });
+              });
+            }
+          `}
+        </Script>
+
+        {/* Online/offline detection script */}
+        <Script id="online-offline-detection" strategy="afterInteractive">
+          {`
+            function updateOnlineStatus() {
+              const indicator = document.getElementById('offline-indicator');
+              if (navigator.onLine) {
+                indicator?.classList.add('hidden');
+              } else {
+                indicator?.classList.remove('hidden');
               }
-            `,
-          }}
-        />
+            }
+            
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
+          `}
+        </Script>
+
+        {/* Enhanced Service Worker registration */}
+        <Script id="enhanced-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw-enhanced.js')
+                  .then(function(registration) {
+                    console.log('Enhanced SW registered: ', registration);
+                  })
+                  .catch(function(registrationError) {
+                    console.log('Enhanced SW registration failed: ', registrationError);
+                  });
+              });
+            }
+          `}
+        </Script>
       </body>
     </html>
   )

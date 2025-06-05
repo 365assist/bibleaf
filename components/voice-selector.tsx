@@ -17,7 +17,7 @@ interface Voice {
 
 interface VoiceSelectorProps {
   selectedVoiceId: string
-  onVoiceSelect: (voiceId: string, voiceName: string) => void
+  onVoiceSelect: (voiceId: string) => void
   contentType?: "verse" | "psalm" | "prayer" | "narrative" | "prophecy"
 }
 
@@ -213,7 +213,7 @@ export function VoiceSelector({ selectedVoiceId, onVoiceSelect, contentType = "v
                         <Button
                           variant={isSelected ? "secondary" : "default"}
                           size="sm"
-                          onClick={() => onVoiceSelect(voice.voice_id, voice.name)}
+                          onClick={() => onVoiceSelect(voice.voice_id)}
                           disabled={isSelected}
                         >
                           {isSelected ? "Selected" : "Select"}
