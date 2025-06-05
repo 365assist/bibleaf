@@ -1,19 +1,14 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter, Crimson_Text } from "next/font/google"
+import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
 import { StructuredDataService } from "@/lib/structured-data"
 import Script from "next/script"
+import { Crimson_Text } from "next/font/google"
 
 // Optimized font loading with preload
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-  variable: "--font-sans",
-})
-
 const crimsonText = Crimson_Text({
   subsets: ["latin"],
   weight: ["400", "600", "700"],
@@ -21,38 +16,16 @@ const crimsonText = Crimson_Text({
   variable: "--font-serif",
 })
 
-// Enhanced metadata with better SEO
+const inter = Inter({ subsets: ["latin"], display: "swap", preload: true, variable: "--font-sans" })
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://bibleaf.ai"),
-  title: "BibleAF - AI-Powered Bible Study",
-  description: "Explore the Bible with AI-powered insights, search, and guidance",
-  manifest: "/manifest.json",
-  themeColor: "#ffffff",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "BibleAF",
+  title: {
+    default: "BibleAF - AI-Powered Bible Study",
+    template: "%s | BibleAF",
   },
-  keywords: [
-    "Bible study",
-    "AI Bible",
-    "spiritual guidance",
-    "daily devotionals",
-    "Christian app",
-    "biblical insights",
-    "scripture search",
-    "faith journey",
-    "pastoral care",
-    "Bible verses",
-    "cross-references",
-    "biblical commentary",
-    "Christian devotional",
-    "spiritual growth",
-    "Bible reading",
-    "theology",
-  ],
-  authors: [{ name: "BibleAF Team", url: "https://bibleaf.ai/about" }],
+  description: "Experience Scripture like never before with AI-powered insights and spiritual guidance",
+  keywords: ["Bible", "AI", "spiritual guidance", "Christian", "faith", "Scripture"],
+  authors: [{ name: "BibleAF Team" }],
   creator: "BibleAF",
   publisher: "BibleAF",
   formatDetection: {
@@ -60,54 +33,27 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  category: "Religion",
-  classification: "Christian Bible Study Application",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://bibleaf.com"),
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "/",
     siteName: "BibleAF",
-    title: "BibleAF - AI-Powered Bible Study & Spiritual Guidance",
-    description:
-      "Experience Scripture with AI-powered insights, daily devotionals, and pastoral support for deeper spiritual growth.",
-    images: [
-      {
-        url: "/images/divine-light-background.png",
-        width: 1200,
-        height: 630,
-        alt: "BibleAF - AI-Powered Bible Study Platform",
-        type: "image/png",
-      },
-      {
-        url: "/icons/icon-512x512.png",
-        width: 512,
-        height: 512,
-        alt: "BibleAF Logo",
-        type: "image/png",
-      },
-    ],
+    title: "BibleAF - AI-Powered Bible Study",
+    description: "Experience Scripture like never before with AI-powered insights and spiritual guidance",
   },
   twitter: {
     card: "summary_large_image",
-    site: "@bibleaf",
-    creator: "@bibleaf",
     title: "BibleAF - AI-Powered Bible Study",
-    description: "Experience Scripture with AI-powered insights and spiritual guidance",
-    images: [
-      {
-        url: "/images/divine-light-background.png",
-        alt: "BibleAF - AI-Powered Bible Study",
-      },
-    ],
+    description: "Experience Scripture like never before with AI-powered insights and spiritual guidance",
+    creator: "@bibleaf",
   },
   robots: {
     index: true,
     follow: true,
-    nocache: false,
     googleBot: {
       index: true,
       follow: true,
-      noimageindex: false,
       "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,
@@ -119,26 +65,6 @@ export const metadata: Metadata = {
     other: {
       "msvalidate.01": process.env.BING_SITE_VERIFICATION || "",
     },
-  },
-  alternates: {
-    canonical: "/",
-    languages: {
-      "en-US": "/en-US",
-      en: "/en",
-    },
-  },
-  applicationName: "BibleAF",
-  referrer: "origin-when-cross-origin",
-  bookmarks: "/dashboard",
-  other: {
-    "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "default",
-    "apple-mobile-web-app-title": "BibleAF",
-    "application-name": "BibleAF",
-    "msapplication-TileColor": "#f59e0b",
-    "msapplication-tap-highlight": "no",
-    "theme-color": "#f59e0b",
   },
     generator: 'v0.dev'
 }
@@ -171,7 +97,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${crimsonText.variable}`}>
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="theme-color" content="#d97706" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="BibleAF" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -181,16 +115,16 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//js.stripe.com" />
 
         {/* Enhanced PWA configuration */}
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
+        {/* <link rel="manifest" href="/manifest.json" /> */}
+        {/* <link rel="icon" href="/favicon.ico" sizes="any" /> */}
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        {/* <link rel="apple-touch-icon" href="/icons/icon-192x192.png" /> */}
         <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
 
         {/* Additional Apple-specific meta tags */}
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="BibleAF" />
+        {/* <meta name="apple-mobile-web-app-capable" content="yes" /> */}
+        {/* <meta name="apple-mobile-web-app-status-bar-style" content="default" /> */}
+        {/* <meta name="apple-mobile-web-app-title" content="BibleAF" /> */}
         <meta name="apple-touch-fullscreen" content="yes" />
 
         {/* Microsoft-specific meta tags */}
@@ -262,6 +196,7 @@ export default function RootLayout({
           </div>
 
           <main id="main-content">{children}</main>
+          <Toaster />
 
           {/* Online/offline detection script */}
           <script
