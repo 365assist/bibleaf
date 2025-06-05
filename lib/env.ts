@@ -22,6 +22,9 @@ export const clientEnv = {
 
   // Public API keys (safe for client)
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
+
+  // Note: ELEVENLABS_API_KEY is intentionally NOT included here for security
+  // TTS functionality uses server-side API routes only
 }
 
 // ==============================
@@ -89,10 +92,12 @@ export const features = {
 
   // Features that require specific API keys
   get tts() {
-    // Always check server-side only for security
+    // On client, we can't check the API key directly for security
+    // Instead, we assume TTS is available and let the server validate
     if (isClient) {
-      return true // Assume available, will be validated server-side
+      return true // Will be validated server-side when TTS is actually used
     }
+    // On server, check if the API key is available
     return !!process.env.ELEVENLABS_API_KEY
   },
 
@@ -107,7 +112,7 @@ export const features = {
     if (isClient) {
       return true // Assume available, will be checked server-side
     }
-    return !!process.env.DEEPINFRA_API_KEY
+    return !!(process.env.DEEPINFRA_API_KEY || process.env.OPENAI_API_KEY)
   },
 
   get storage() {
@@ -130,4 +135,93 @@ export const env = {
   DEEPINFRA_API_KEY: isServer ? process.env.DEEPINFRA_API_KEY || "" : "",
   BLOB_READ_WRITE_TOKEN: isServer ? process.env.BLOB_READ_WRITE_TOKEN || "" : "",
   OPENAI_API_KEY: isServer ? process.env.OPENAI_API_KEY || "" : "",
+  DATABASE_URL: isServer ? process.env.DATABASE_URL || "" : "",
+  NODE_ENV: process.env.NODE_ENV || "development",
+}
+
+// Validation functions
+export function validateClientEnv() {
+  const missing = []
+
+  if (!clientEnv.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) missing.push("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY")
+  if (!clientEnv.NEXT_PUBLIC_APP_URL) missing.push("NEXT_PUBLIC_APP_URL")
+
+  if (missing.length > 0) {
+    console.warn(`Missing client environment variables: ${missing.join(", ")}`)
+    console.warn("Some features may not work properly.")
+  }
+
+  return missing.length === 0
+}
+
+export function validateServerEnv() {
+  if (isClient) return true // Skip validation on client
+
+  const required = ["OPENAI_API_KEY", "STRIPE_SECRET_KEY", "BLOB_READ_WRITE_TOKEN"]
+  const missing = required.filter((key) => !process.env[key])
+
+  if (missing.length > 0) {
+    console.error(`Missing required server environment variables: ${missing.join(", ")}`)
+    return false
+  }
+
+  return true
+}
+
+// Main validation function that combines both client and server validation
+export function validateEnv() {
+  if (isServer) {
+    // On server, validate both client and server environment
+    const clientValid = validateClientEnv()
+    const serverValid = validateServerEnv()
+
+    if (!serverValid) {
+      throw new Error("Server environment validation failed. Check required environment variables.")
+    }
+
+    return clientValid && serverValid
+  } else {
+    // On client, only validate client environment
+    return validateClientEnv()
+  }
+}
+
+// Safe environment access that doesn't trigger warnings for build-time variables
+export function safeGetEnv(key: string): string {
+  // Build-time only variables that shouldn't be accessed at runtime
+  if (BUILD_TIME_ONLY_VARS.includes(key)) {
+    return "" // Silently return empty string for build-time variables
+  }
+
+  if (isClient && !key.startsWith("NEXT_PUBLIC_")) {
+    console.warn(`${key} cannot be accessed on the client.`)
+    return ""
+  }
+
+  return process.env[key] || ""
+}
+
+// App configuration that works on both client and server
+export const appConfig = {
+  appName: "BibleAF",
+  appDescription: "AI-Powered Bible Study and Life Guidance",
+  appUrl: getAppUrl(),
+  isDev: isDevelopment(),
+}
+
+// Default export for convenience
+export default {
+  clientEnv,
+  serverEnv,
+  features,
+  isServer,
+  isClient,
+  env,
+  appConfig,
+  validateClientEnv,
+  validateServerEnv,
+  validateEnv,
+  safeGetEnv,
+  getAppUrl,
+  isDevelopment,
 }

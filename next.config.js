@@ -1,24 +1,33 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
+  experimental: {
+    serverComponentsExternalPackages: ["sharp"],
   },
   images: {
-    unoptimized: true,
-    formats: ["image/avif", "image/webp"],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    minimumCacheTTL: 60,
+    domains: ["placeholder.svg"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
   },
-  compress: true,
-  poweredByHeader: false,
-  reactStrictMode: true,
-  swcMinify: true,
-  experimental: {
-    optimizeCss: true,
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
+    }
+    return config
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
   },
 }
 
