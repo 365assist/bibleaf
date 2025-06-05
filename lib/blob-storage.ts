@@ -9,6 +9,7 @@ export interface UserData {
     tier: "free" | "basic" | "premium" | "annual"
     status: "active" | "canceled" | "expired"
     searchesUsedToday: number
+    guidanceUsedToday: number
     lastSearchReset: string
   }
   preferences: {
@@ -17,7 +18,7 @@ export interface UserData {
     verseCategories: string[]
   }
   createdAt: string
-  updatedAt: string
+  updatedAt?: string
 }
 
 export interface SavedVerse {
@@ -79,6 +80,7 @@ export async function initializeUserData(userId: string, userData: Partial<UserD
       tier: "free",
       status: "active",
       searchesUsedToday: 0,
+      guidanceUsedToday: 0,
       lastSearchReset: new Date().toISOString(),
       ...userData.subscription,
     },
@@ -450,88 +452,24 @@ async function updateVersesIndex(userId: string, verseId: string, operation: "ad
 // Usage tracking operations
 export async function updateUsageTracking(userId: string, type: "search" | "guidance"): Promise<boolean> {
   try {
-    let userData = await getUserData(userId)
+    // Make a POST request to the usage tracking API
+    const response = await fetch("/api/usage/track", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        type,
+      }),
+    })
 
-    // If no user data exists, create default data for the user
-    if (!userData) {
-      // Check if this is a developer account
-      const isDeveloperAccount = userId.startsWith("dev-") || userId.startsWith("admin-") || userId.startsWith("test-")
+    const data = await response.json()
 
-      if (isDeveloperAccount) {
-        // Create default user data for developer accounts
-        userData = {
-          id: userId,
-          email: userId.includes("dev")
-            ? "dev@bibleaf.com"
-            : userId.includes("admin")
-              ? "admin@bibleaf.com"
-              : "test@bibleaf.com",
-          name: userId.includes("dev")
-            ? "Developer Account"
-            : userId.includes("admin")
-              ? "Admin Account"
-              : "Test Account",
-          subscription: {
-            tier: userId.includes("test") ? "free" : "premium",
-            status: "active",
-            searchesUsedToday: 0,
-            lastSearchReset: new Date().toISOString(),
-          },
-          preferences: {
-            theme: "system",
-            notifications: true,
-            verseCategories: [],
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-
-        // Try to save the new user data, but don't fail if storage is unavailable
-        try {
-          await saveUserData(userData)
-          console.log(`Created user data for developer account: ${userId}`)
-        } catch (error) {
-          console.log("Failed to save user data to storage, using local cache only")
-        }
-      } else {
-        // For non-developer accounts without stored data, allow limited usage
-        console.log("No user data found, allowing demo usage")
-        return true
-      }
-    }
-
-    const today = new Date().toISOString().split("T")[0]
-    const lastReset = userData.subscription.lastSearchReset.split("T")[0]
-
-    // Reset daily usage if it's a new day
-    if (today !== lastReset) {
-      userData.subscription.searchesUsedToday = 0
-      userData.subscription.lastSearchReset = new Date().toISOString()
-    }
-
-    // Check limits based on subscription tier
-    const limits = getUsageLimits(userData.subscription.tier)
-
-    if (type === "search" && userData.subscription.searchesUsedToday >= limits.searches) {
-      return false // Limit exceeded
-    }
-
-    if (type === "guidance" && userData.subscription.searchesUsedToday >= limits.guidance) {
-      return false // Limit exceeded for guidance (using same counter for demo)
-    }
-
-    // Increment usage
-    if (type === "search" || type === "guidance") {
-      userData.subscription.searchesUsedToday++
-    }
-
-    userData.updatedAt = new Date().toISOString()
-
-    // Try to save updated data, but don't fail if storage is unavailable
-    try {
-      await saveUserData(userData)
-    } catch (error) {
-      console.log("Failed to save usage tracking to storage, continuing with local cache")
+    // If limit exceeded, return false
+    if (data.limitExceeded) {
+      console.log(`Usage limit exceeded for ${userId} - type: ${type}`)
+      return false
     }
 
     return true
@@ -548,7 +486,7 @@ function getUsageLimits(tier: string) {
     case "annual":
       return { searches: Number.POSITIVE_INFINITY, guidance: Number.POSITIVE_INFINITY }
     case "basic":
-      return { searches: 20, guidance: 10 }
+      return { searches: 50, guidance: 25 }
     case "free":
     default:
       return { searches: 5, guidance: 5 }

@@ -17,12 +17,12 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
   const [error, setError] = useState<string | null>(null)
   const [isMuted, setIsMuted] = useState(false)
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettingsType>({
-    voiceId: "pNInz6obpgDQGcFmaJgB", // Adam - a valid ElevenLabs voice
+    voiceId: "ErXwobaYiN019PkySvjV", // Adam - a valid ElevenLabs voice
     stability: 0.5,
     similarityBoost: 0.75,
   })
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [voiceName, setVoiceName] = useState("Adam")
+  const [voiceName, setVoiceName] = useState("Zach Bryan Style")
   const [cacheStatus, setCacheStatus] = useState<string | null>(null)
   const currentAudioUrl = useRef<string | null>(null)
 
@@ -204,7 +204,7 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
       } else if (newSettings.voiceId === "EXAVITQu4vr4xnSDxMaL") {
         setVoiceName("Bella")
       } else if (newSettings.voiceId === "ErXwobaYiN019PkySvjV") {
-        setVoiceName("Antoni")
+        setVoiceName("Zach Bryan Style")
       } else {
         setVoiceName("Custom Voice")
       }

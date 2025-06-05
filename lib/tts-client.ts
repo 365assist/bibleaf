@@ -16,7 +16,7 @@ const memoryCache = new Map<string, Blob>()
  */
 export async function generateSpeech({
   text,
-  voiceId = "pNInz6obpgDQGcFmaJgB", // Adam - valid ElevenLabs voice
+  voiceId = "ErXwobaYiN019PkySvjV", // Adam - valid ElevenLabs voice
   stability = 0.5,
   similarityBoost = 0.75,
   useCache = true,

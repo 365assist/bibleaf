@@ -1,87 +1,42 @@
-import { isServer } from "./env-utils"
-
-// List of build-time only variables that should never be accessed at runtime
-const BUILD_TIME_ONLY_VARS = ["NPM_RC", "NPM_TOKEN", "ANALYZE", "BUNDLE_ANALYZE"]
-
-// Add client-side protection
-if (typeof window !== "undefined") {
-  // Suppress build-time variable warnings on client
-  BUILD_TIME_ONLY_VARS.forEach((varName) => {
-    if (process.env[varName]) {
-      console.warn(`Build-time variable ${varName} should not be accessed on client`)
-    }
-  })
-}
-
-// Server-side environment variables
-// These are ONLY available on the server
+// Server-side environment variables with proper validation
 export const serverEnv = {
   // Stripe Configuration
-  STRIPE_SECRET_KEY: isServer ? process.env.STRIPE_SECRET_KEY || "" : "",
-  STRIPE_WEBHOOK_SECRET: isServer ? process.env.STRIPE_WEBHOOK_SECRET || "" : "",
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
 
   // AI Configuration
-  DEEPINFRA_API_KEY: isServer ? process.env.DEEPINFRA_API_KEY || "" : "",
-  ELEVENLABS_API_KEY: isServer ? process.env.ELEVENLABS_API_KEY || "" : "",
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
+  DEEPINFRA_API_KEY: process.env.DEEPINFRA_API_KEY || "",
+  ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || "",
 
   // Storage Configuration
-  BLOB_READ_WRITE_TOKEN: isServer ? process.env.BLOB_READ_WRITE_TOKEN || "" : "",
+  BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN || "",
+
+  // Other Configuration
+  NODE_ENV: process.env.NODE_ENV || "development",
+  ANALYZE: process.env.ANALYZE || "",
+  BUNDLE_ANALYZE: process.env.BUNDLE_ANALYZE || "",
+  NPM_RC: process.env.NPM_RC || "",
+  NPM_TOKEN: process.env.NPM_TOKEN || "",
 }
 
-// Validation function for server environment
-export function validateServerEnv() {
-  // Only run on server
-  if (!isServer) return { valid: false, error: "Cannot validate server environment on client" }
-
-  const requiredVars = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]
-  const optionalVars = ["DEEPINFRA_API_KEY", "ELEVENLABS_API_KEY", "BLOB_READ_WRITE_TOKEN"]
-
-  const missing = requiredVars.filter((v) => !process.env[v])
-  const missingOptional = optionalVars.filter((v) => !process.env[v])
-
-  if (missing.length > 0) {
-    console.error(`Missing required server environment variables: ${missing.join(", ")}`)
-    return { valid: false, missing, missingOptional }
-  }
-
-  if (missingOptional.length > 0) {
-    console.warn(`Missing optional server environment variables: ${missingOptional.join(", ")}`)
-  }
-
-  return { valid: true, missing: [], missingOptional }
+// Debug function to log environment status
+export function debugServerEnv() {
+  console.log("=== Server Environment Debug ===")
+  console.log("STRIPE_SECRET_KEY exists:", !!serverEnv.STRIPE_SECRET_KEY)
+  console.log("STRIPE_SECRET_KEY length:", serverEnv.STRIPE_SECRET_KEY.length)
+  console.log("STRIPE_SECRET_KEY starts with sk_:", serverEnv.STRIPE_SECRET_KEY.startsWith("sk_"))
+  console.log("STRIPE_WEBHOOK_SECRET exists:", !!serverEnv.STRIPE_WEBHOOK_SECRET)
+  console.log("DEEPINFRA_API_KEY exists:", !!serverEnv.DEEPINFRA_API_KEY)
+  console.log("BLOB_READ_WRITE_TOKEN exists:", !!serverEnv.BLOB_READ_WRITE_TOKEN)
+  console.log(
+    "All process.env STRIPE vars:",
+    Object.keys(process.env).filter((key) => key.includes("STRIPE")),
+  )
+  console.log("================================")
 }
 
-// Check if Stripe is properly configured (server-side)
-export const isStripeConfiguredServer = isServer
-  ? !!(serverEnv.STRIPE_SECRET_KEY && serverEnv.STRIPE_WEBHOOK_SECRET)
-  : false
-
-// Check if Deep Infra is properly configured (server-side)
-export const isDeepInfraConfigured = isServer ? !!serverEnv.DEEPINFRA_API_KEY : false
-
-// Check if ElevenLabs is properly configured (server-side)
-export const isElevenLabsConfiguredServer = isServer ? !!serverEnv.ELEVENLABS_API_KEY : false
-
-// Check if Blob storage is properly configured (server-side)
-export const isBlobStorageConfigured = isServer ? !!serverEnv.BLOB_READ_WRITE_TOKEN : false
-
-// Get environment status for system status page
-export function getEnvironmentStatus() {
-  if (!isServer) {
-    return { error: "Cannot get environment status on client" }
-  }
-
-  return {
-    core: {
-      app: true,
-    },
-    services: {
-      stripe: isStripeConfiguredServer,
-      deepInfra: isDeepInfraConfigured,
-      elevenLabs: isElevenLabsConfiguredServer,
-      blobStorage: isBlobStorageConfigured,
-    },
-    environment: process.env.NODE_ENV || "development",
-    timestamp: new Date().toISOString(),
-  }
+// Validate server environment on import
+if (typeof window === "undefined") {
+  debugServerEnv()
 }

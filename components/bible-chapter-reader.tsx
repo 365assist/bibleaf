@@ -1,9 +1,25 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ChevronLeft, ChevronRight, BookOpen, Heart } from "lucide-react"
-import { type BibleChapter, BibleService } from "@/lib/bible-service"
+import { ChevronLeft, ChevronRight, BookOpen, Heart, AlertCircle } from "lucide-react"
 import TextToSpeech from "./text-to-speech"
+import { normalizeBookName, getBookInfo } from "@/lib/bible-book-mapping"
+
+interface BibleVerse {
+  book: string
+  chapter: number
+  verse: number
+  text: string
+  translation: string
+}
+
+interface BibleChapter {
+  book: string
+  chapter: number
+  verses: BibleVerse[]
+  translation: string
+  bookDisplayName?: string
+}
 
 interface BibleChapterReaderProps {
   book: string
@@ -17,29 +33,64 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [selectedVerse, setSelectedVerse] = useState<number | null>(highlightVerse || null)
-  const [translation, setTranslation] = useState("NIV")
+  const [translation, setTranslation] = useState("kjv")
+  const [availableTranslations, setAvailableTranslations] = useState<string[]>(["kjv", "niv", "nasb", "nlt", "csb"])
 
   useEffect(() => {
     fetchChapter()
+    fetchAvailableTranslations()
   }, [book, chapter, translation])
+
+  const fetchAvailableTranslations = async () => {
+    try {
+      const response = await fetch("/api/bible/translations")
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.translations && Array.isArray(data.translations)) {
+          // Ensure all translations are strings
+          const validTranslations = data.translations
+            .filter((trans: any) => typeof trans === "string" || (trans && typeof trans.code === "string"))
+            .map((trans: any) => (typeof trans === "string" ? trans : trans.code))
+          setAvailableTranslations(
+            validTranslations.length > 0 ? validTranslations : ["kjv", "niv", "nasb", "nlt", "csb"],
+          )
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching translations:", error)
+      // Keep default translations on error
+    }
+  }
 
   const fetchChapter = async () => {
     try {
       setLoading(true)
       setError("")
 
-      const response = await fetch(
-        `/api/bible/chapter?book=${encodeURIComponent(book)}&chapter=${chapter}&translation=${translation}`,
-      )
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch chapter")
+      // Normalize the book name before making the API call
+      const normalizedBook = normalizeBookName(book)
+      if (!normalizedBook) {
+        throw new Error(`Unknown book: ${book}`)
       }
 
+      const response = await fetch(
+        `/api/bible/chapter?book=${encodeURIComponent(normalizedBook)}&chapter=${chapter}&translation=${translation}`,
+      )
+
       const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}`)
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to fetch chapter")
+      }
+
       setChapterData(data)
     } catch (err) {
-      setError("Failed to load chapter. Please try again.")
+      const errorMessage = err instanceof Error ? err.message : "Failed to load chapter. Please try again."
+      setError(errorMessage)
       console.error("Error fetching chapter:", err)
     } finally {
       setLoading(false)
@@ -52,8 +103,10 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
 
   const handleSaveVerse = (verseNumber: number, verseText: string) => {
     if (onSaveVerse) {
+      const bookInfo = getBookInfo(book)
+      const displayName = bookInfo?.name || book
       onSaveVerse({
-        reference: `${book} ${chapter}:${verseNumber}`,
+        reference: `${displayName} ${chapter}:${verseNumber}`,
         text: verseText,
       })
     }
@@ -65,41 +118,114 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
   }
 
   const navigateChapter = (direction: "prev" | "next") => {
-    const bookInfo = BibleService.getBook(book)
+    const bookInfo = getBookInfo(book)
     if (!bookInfo) return
 
     let newChapter = chapter
-    let newBook = book
+    const newBook = book
 
     if (direction === "next") {
       if (chapter < bookInfo.chapters) {
         newChapter = chapter + 1
       } else {
-        // Move to next book
-        const books = BibleService.getBooks()
-        const currentIndex = books.findIndex((b) => b.name === book)
-        if (currentIndex < books.length - 1) {
-          newBook = books[currentIndex + 1].name
-          newChapter = 1
-        }
+        // For now, just stay on the last chapter
+        // TODO: Implement navigation to next book
+        return
       }
     } else {
       if (chapter > 1) {
         newChapter = chapter - 1
       } else {
-        // Move to previous book
-        const books = BibleService.getBooks()
-        const currentIndex = books.findIndex((b) => b.name === book)
-        if (currentIndex > 0) {
-          const prevBook = books[currentIndex - 1]
-          newBook = prevBook.name
-          newChapter = prevBook.chapters
-        }
+        // For now, just stay on the first chapter
+        // TODO: Implement navigation to previous book
+        return
       }
     }
 
-    // In a real app, you'd update the URL here
-    window.location.href = `/bible/${encodeURIComponent(newBook)}/${newChapter}`
+    // Update the current page
+    const normalizedBook = normalizeBookName(newBook)
+    if (normalizedBook) {
+      window.history.pushState({}, "", `/bible/${encodeURIComponent(book)}/${newChapter}`)
+      window.location.reload()
+    }
+  }
+
+  // Helper function to safely display translation
+  const getTranslationDisplay = (trans: any): string => {
+    if (typeof trans === "string") {
+      return trans.toUpperCase()
+    }
+    if (trans && typeof trans.code === "string") {
+      return trans.code.toUpperCase()
+    }
+    if (trans && typeof trans.name === "string") {
+      return trans.name.toUpperCase()
+    }
+    return String(trans).toUpperCase()
+  }
+
+  // Helper function to get translation value
+  const getTranslationValue = (trans: any): string => {
+    if (typeof trans === "string") {
+      return trans
+    }
+    if (trans && typeof trans.code === "string") {
+      return trans.code
+    }
+    return String(trans)
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
+        <div className="flex items-center gap-2 mb-2">
+          <AlertCircle size={20} />
+          <p className="font-medium">Chapter Not Available</p>
+        </div>
+        <p className="text-sm mt-1">{error}</p>
+        <div className="mt-4 space-y-3">
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium mb-2">What you can do:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Try a different chapter (e.g., Proverbs 1)</li>
+              <li>Try a popular book like John, Psalms, or Genesis</li>
+              <li>Upload full Bible data using the admin tools</li>
+              <li>Check if the translation is available</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={fetchChapter}
+              className="text-sm underline hover:no-underline bg-destructive/20 px-3 py-1 rounded"
+            >
+              Try again
+            </button>
+            <button
+              onClick={() => (window.location.href = "/bible/john/3")}
+              className="text-sm underline hover:no-underline bg-blue-100 px-3 py-1 rounded"
+            >
+              Go to John 3:16
+            </button>
+            <button
+              onClick={() => (window.location.href = "/bible/psalms/23")}
+              className="text-sm underline hover:no-underline bg-green-100 px-3 py-1 rounded"
+            >
+              Go to Psalm 23
+            </button>
+          </div>
+
+          <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
+            <p className="font-medium">Debug Info:</p>
+            <p>
+              Requested: {book} {chapter} ({translation.toUpperCase()})
+            </p>
+            <p>Normalized: {normalizeBookName(book) || "Unknown"}</p>
+            <p>Available sample books: John, Psalms, Genesis, Matthew, Romans, Philippians, Proverbs</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
@@ -111,21 +237,12 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
     )
   }
 
-  if (error) {
-    return (
-      <div className="p-6 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
-        <p className="font-medium">Error Loading Chapter</p>
-        <p className="text-sm mt-1">{error}</p>
-        <button onClick={fetchChapter} className="text-sm underline mt-2 hover:no-underline">
-          Try again
-        </button>
-      </div>
-    )
-  }
-
   if (!chapterData) {
     return <div className="p-6 text-center text-muted-foreground">Chapter not found</div>
   }
+
+  const bookInfo = getBookInfo(book)
+  const displayName = chapterData.bookDisplayName || bookInfo?.name || book
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -133,9 +250,10 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-muted/30 rounded-lg">
         <div>
           <h1 className="text-2xl font-bold">
-            {chapterData.book} {chapterData.chapter}
+            {displayName} {chapterData.chapter}
           </h1>
-          <p className="text-muted-foreground">{chapterData.translation}</p>
+          <p className="text-muted-foreground">{getTranslationDisplay(chapterData.translation)}</p>
+          <p className="text-sm text-muted-foreground">{chapterData.verses.length} verses</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -144,10 +262,11 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
             onChange={(e) => setTranslation(e.target.value)}
             className="px-3 py-1 border rounded text-sm"
           >
-            <option value="NIV">NIV</option>
-            <option value="ESV">ESV</option>
-            <option value="KJV">KJV</option>
-            <option value="NASB">NASB</option>
+            {availableTranslations.map((trans) => (
+              <option key={getTranslationValue(trans)} value={getTranslationValue(trans)}>
+                {getTranslationDisplay(trans)}
+              </option>
+            ))}
           </select>
 
           <TextToSpeech text={getChapterText()} label="Listen to chapter" />
@@ -158,7 +277,8 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
       <div className="flex justify-between items-center">
         <button
           onClick={() => navigateChapter("prev")}
-          className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-muted transition-colors"
+          disabled={chapter <= 1}
+          className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft size={16} />
           Previous
@@ -166,12 +286,15 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <BookOpen size={16} />
-          <span>{chapterData.verses.length} verses</span>
+          <span>
+            Chapter {chapter} of {bookInfo?.chapters || "?"}
+          </span>
         </div>
 
         <button
           onClick={() => navigateChapter("next")}
-          className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-muted transition-colors"
+          disabled={chapter >= (bookInfo?.chapters || 1)}
+          className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
           <ChevronRight size={16} />
@@ -227,7 +350,8 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
       <div className="flex justify-between items-center pt-6 border-t">
         <button
           onClick={() => navigateChapter("prev")}
-          className="flex items-center gap-2 px-6 py-3 border rounded-lg hover:bg-muted transition-colors"
+          disabled={chapter <= 1}
+          className="flex items-center gap-2 px-6 py-3 border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft size={16} />
           Previous Chapter
@@ -235,7 +359,8 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
 
         <button
           onClick={() => navigateChapter("next")}
-          className="flex items-center gap-2 px-6 py-3 border rounded-lg hover:bg-muted transition-colors"
+          disabled={chapter >= (bookInfo?.chapters || 1)}
+          className="flex items-center gap-2 px-6 py-3 border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next Chapter
           <ChevronRight size={16} />

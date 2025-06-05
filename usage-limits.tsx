@@ -10,7 +10,9 @@ interface UsageLimitsProps {
 export default function UsageLimits({ userId, subscriptionTier = "free" }: UsageLimitsProps) {
   const [usage, setUsage] = useState({
     searches: 0,
-    guidanceRequests: 0,
+    guidance: 0,
+    searchLimit: 5,
+    guidanceLimit: 3,
     lastReset: new Date(),
   })
   const [isLoading, setIsLoading] = useState(true)
@@ -22,18 +24,18 @@ export default function UsageLimits({ userId, subscriptionTier = "free" }: Usage
       case "annual":
         return {
           searches: Number.POSITIVE_INFINITY,
-          guidanceRequests: Number.POSITIVE_INFINITY,
+          guidance: Number.POSITIVE_INFINITY,
         }
       case "basic":
         return {
-          searches: 20,
-          guidanceRequests: 10,
+          searches: 50,
+          guidance: 25,
         }
       case "free":
       default:
         return {
-          searches: 5, // 5 searches per day for free tier
-          guidanceRequests: 5, // 5 guidance requests per day for free tier
+          searches: 5, // Strict 5 searches per day for free tier
+          guidance: 5, // 5 guidance requests per day for free tier
         }
     }
   })()
@@ -47,7 +49,13 @@ export default function UsageLimits({ userId, subscriptionTier = "free" }: Usage
         const data = await response.json()
 
         if (data.usage) {
-          setUsage(data.usage)
+          setUsage({
+            searches: data.usage.searches || 0,
+            guidance: data.usage.guidance || 0,
+            searchLimit: data.usage.searchLimit || limits.searches,
+            guidanceLimit: data.usage.guidanceLimit || limits.guidance,
+            lastReset: new Date(),
+          })
         }
       } catch (error) {
         console.error("Error fetching usage data:", error)
@@ -61,7 +69,7 @@ export default function UsageLimits({ userId, subscriptionTier = "free" }: Usage
     // Refresh usage data every minute
     const interval = setInterval(fetchUsage, 60000)
     return () => clearInterval(interval)
-  }, [userId])
+  }, [userId, limits.searches, limits.guidance])
 
   // Format usage display
   const formatUsage = (used: number, limit: number) => {
@@ -89,12 +97,12 @@ export default function UsageLimits({ userId, subscriptionTier = "free" }: Usage
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm">Bible Searches</span>
-              <span className="text-sm font-medium">{formatUsage(usage.searches, limits.searches)}</span>
+              <span className="text-sm font-medium">{formatUsage(usage.searches, usage.searchLimit)}</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary"
-                style={{ width: `${calculatePercentage(usage.searches, limits.searches)}%` }}
+                style={{ width: `${calculatePercentage(usage.searches, usage.searchLimit)}%` }}
               ></div>
             </div>
           </div>
@@ -102,23 +110,21 @@ export default function UsageLimits({ userId, subscriptionTier = "free" }: Usage
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm">Life Guidance Requests</span>
-              <span className="text-sm font-medium">
-                {formatUsage(usage.guidanceRequests, limits.guidanceRequests)}
-              </span>
+              <span className="text-sm font-medium">{formatUsage(usage.guidance, usage.guidanceLimit)}</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary"
-                style={{ width: `${calculatePercentage(usage.guidanceRequests, limits.guidanceRequests)}%` }}
+                style={{ width: `${calculatePercentage(usage.guidance, usage.guidanceLimit)}%` }}
               ></div>
             </div>
           </div>
 
           {subscriptionTier === "free" && (
             <div className="pt-3 text-sm">
-              <p className="text-muted-foreground">You're on the Free plan with limited daily usage.</p>
+              <p className="text-muted-foreground">You're on the Free plan with 5 daily searches.</p>
               <button
-                onClick={() => (window.location.href = "/dashboard/profile")}
+                onClick={() => (window.location.href = "/pricing")}
                 className="text-primary hover:text-primary/80 text-sm mt-1"
               >
                 Upgrade for unlimited access →

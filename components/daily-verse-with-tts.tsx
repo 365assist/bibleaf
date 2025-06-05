@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Heart, Share2, RefreshCw } from "lucide-react"
+import { Calendar, Heart, Share2 } from "lucide-react"
 import TextToSpeech from "./text-to-speech"
 
 interface DailyVerseData {
@@ -32,28 +32,57 @@ export default function DailyVerseWithTTS({ userId, onSaveVerse }: DailyVerseWit
       setError("")
 
       const url = userId ? `/api/ai/daily-verse?userId=${userId}` : "/api/ai/daily-verse"
-      const response = await fetch(url)
+      console.log("Fetching daily verse from:", url)
 
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type")
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned non-JSON response. Please try again.")
-      }
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      })
 
-      const data = await response.json()
+      console.log("Response status:", response.status)
+      console.log("Response headers:", response.headers.get("content-type"))
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to get daily verse")
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      setVerse({
-        reference: data.verse.reference,
-        text: data.verse.text,
-        context: data.verse.context,
-        date: data.date,
-      })
+      const text = await response.text()
+      console.log("Raw response:", text)
+
+      let data
+      try {
+        data = JSON.parse(text)
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError)
+        throw new Error("Invalid JSON response from server")
+      }
+
+      console.log("Parsed data:", data)
+
+      if (data.verse) {
+        setVerse({
+          reference: data.verse.reference,
+          text: data.verse.text,
+          context: data.verse.context,
+          date: data.date || new Date().toISOString().split("T")[0],
+        })
+      } else {
+        throw new Error("No verse data in response")
+      }
     } catch (error) {
       console.error("Error fetching daily verse:", error)
+
+      // Set a fallback verse instead of showing error
+      setVerse({
+        reference: "Psalm 119:105",
+        text: "Your word is a lamp for my feet, a light on my path.",
+        context: "The psalmist's declaration of Scripture's guidance in life.",
+        date: new Date().toISOString().split("T")[0],
+      })
+
       if (error instanceof Error) {
         setError(error.message)
       } else {
@@ -115,22 +144,6 @@ export default function DailyVerseWithTTS({ userId, onSaveVerse }: DailyVerseWit
     )
   }
 
-  if (error) {
-    return (
-      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
-        <p className="text-destructive font-medium">Error loading daily verse</p>
-        <p className="text-destructive/80 text-sm mt-1">{error}</p>
-        <button
-          onClick={fetchDailyVerse}
-          className="mt-3 text-sm text-destructive hover:text-destructive/80 flex items-center gap-1"
-        >
-          <RefreshCw size={14} />
-          Try again
-        </button>
-      </div>
-    )
-  }
-
   if (!verse) return null
 
   return (
@@ -172,6 +185,12 @@ export default function DailyVerseWithTTS({ userId, onSaveVerse }: DailyVerseWit
       {verse.context && (
         <div className="mt-4 p-4 bg-background/50 rounded-md">
           <p className="text-sm text-muted-foreground italic">{verse.context}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+          Note: Using fallback verse due to connection issue
         </div>
       )}
     </div>

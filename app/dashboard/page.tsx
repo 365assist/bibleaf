@@ -1,621 +1,434 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { AuthService, type User } from "@/lib/auth"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
+import { AuthService } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { BookOpen, Search, Heart, Settings, Crown, Calendar, TrendingUp, MessageCircle, LogOut } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
-import DailyVerse from "@/components/daily-verse"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import DailyVerse from "@/components/daily-verse-with-tts"
 import AIBibleSearch from "@/components/ai-bible-search"
 import LifeGuidance from "@/components/life-guidance"
 import SavedVersesManager from "@/components/saved-verses-manager"
+import ConversationalGuidance from "@/components/conversational-guidance"
+import CrossReferenceExplorer from "@/components/cross-reference-explorer"
+import { SEOHead } from "@/components/seo-head"
+import { AIDisclaimer } from "@/components/ai-disclaimer"
+import SubscriptionModal from "@/components/subscription/subscription-modal"
+import { useToast } from "@/hooks/use-toast"
+import {
+  Book,
+  Search,
+  Heart,
+  Settings,
+  LogOut,
+  Sunrise,
+  MessageCircle,
+  Network,
+  Sparkles,
+  Shield,
+  Compass,
+  Star,
+} from "lucide-react"
 
-// Move this function before the component
-const getSearchLimitNumber = (tier: string): number => {
-  switch (tier) {
-    case "premium":
-    case "annual":
-      return Number.POSITIVE_INFINITY
-    case "basic":
-      return 20
-    default:
-      return 5
-  }
-}
-
-const getSearchLimitDisplay = (tier: string): string => {
-  switch (tier) {
-    case "premium":
-    case "annual":
-      return "Unlimited"
-    case "basic":
-      return "20 per day"
-    default:
-      return "5 per day"
-  }
-}
-
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [activeTab, setActiveTab] = useState("overview")
-  const [searchCount, setSearchCount] = useState(0)
-  const [searchLimit, setSearchLimit] = useState(5) // Default to free tier limit
-  const [isLoadingUsage, setIsLoadingUsage] = useState(false)
+export default function Dashboard() {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [user, setUser] = useState<any>(null)
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [greeting, setGreeting] = useState("")
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        console.log("Loading dashboard...")
-        const currentUser = AuthService.getCurrentUser()
-        console.log("Current user:", currentUser)
-
-        if (!currentUser) {
-          console.log("No user found, redirecting to login")
-          window.location.href = "/auth/login"
-          return
-        }
-
-        setUser(currentUser)
-
-        // Initialize search count from user data
-        setSearchCount(currentUser.subscription.searchesUsedToday || 0)
-        setSearchLimit(getSearchLimitNumber(currentUser.subscription.tier))
-
-        // Fetch the latest usage data (with error handling)
-        try {
-          await fetchUsageData(currentUser.id)
-        } catch (usageError) {
-          console.warn("Failed to fetch usage data, using local data:", usageError)
-          // Continue with local user data if API fails
-        }
-      } catch (error) {
-        console.error("Error loading dashboard:", error)
-        // Fallback: redirect to login if there's an error
-        window.location.href = "/auth/login"
-      }
-
-      // Check if there's an activeTab in the URL
-      const urlParams = new URLSearchParams(window.location.search)
-      const tabParam = urlParams.get("activeTab")
-      if (tabParam) {
-        setActiveTab(tabParam)
-      }
+    const currentUser = AuthService.getCurrentUser()
+    if (!currentUser) {
+      router.push("/auth/login")
+      return
     }
+    setUser(currentUser)
+    setIsLoading(false)
 
-    loadDashboard()
-  }, [])
-
-  useEffect(() => {
-    // Set a timeout to redirect if loading takes too long
-    const timeout = setTimeout(() => {
-      if (!user) {
-        console.log("Dashboard loading timeout, redirecting to login")
-        window.location.href = "/auth/login"
-      }
-    }, 10000) // 10 seconds timeout
-
-    return () => clearTimeout(timeout)
-  }, [user])
-
-  // Function to fetch latest usage data
-  const fetchUsageData = async (userId: string) => {
-    setIsLoadingUsage(true)
-    try {
-      const response = await fetch(`/api/usage/track?userId=${encodeURIComponent(userId)}`)
-
-      if (!response.ok) {
-        console.warn(`Usage API returned ${response.status}, using fallback data`)
-        // Don't throw error, just use fallback data
-        return
-      }
-
-      const contentType = response.headers.get("content-type")
-      if (!contentType || !contentType.includes("application/json")) {
-        console.warn("Usage API returned non-JSON response, using fallback data")
-        return
-      }
-
-      const data = await response.json()
-
-      if (data.usage) {
-        setSearchCount(data.usage.searches || 0)
-        setSearchLimit(data.usage.limit || getSearchLimitNumber(user?.subscription.tier || "free"))
-
-        // Update the local user object with the latest count
-        setUser((prev) => {
-          if (!prev) return null
-          return {
-            ...prev,
-            subscription: {
-              ...prev.subscription,
-              searchesUsedToday: data.usage.searches || 0,
-            },
-          }
-        })
-      }
-    } catch (error) {
-      console.warn("Error fetching usage data, using fallback:", error)
-      // Fallback to user data if API fails
-      if (user) {
-        setSearchCount(user.subscription.searchesUsedToday || 0)
-        setSearchLimit(getSearchLimitNumber(user.subscription.tier))
-      }
-    } finally {
-      setIsLoadingUsage(false)
+    // Set personalized greeting based on time of day
+    const hour = new Date().getHours()
+    if (hour < 12) {
+      setGreeting("Good morning")
+    } else if (hour < 17) {
+      setGreeting("Good afternoon")
+    } else {
+      setGreeting("Good evening")
     }
-  }
-
-  // Function to handle search completion
-  const handleSearchComplete = async () => {
-    console.log("Search completed, updating count")
-    if (!user) return
-
-    try {
-      // Increment local count immediately for UI feedback
-      setSearchCount((prev) => prev + 1)
-
-      // Update user object
-      setUser((prev) => {
-        if (!prev) return null
-        return {
-          ...prev,
-          subscription: {
-            ...prev.subscription,
-            searchesUsedToday: (prev.subscription.searchesUsedToday || 0) + 1,
-          },
-        }
-      })
-
-      // Track the usage on the server (with error handling)
-      try {
-        const response = await fetch("/api/usage/track", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.id,
-            type: "search",
-          }),
-        })
-
-        if (!response.ok) {
-          console.warn("Failed to track usage on server:", await response.text())
-        } else {
-          // Fetch latest data from server to ensure accuracy
-          await fetchUsageData(user.id)
-        }
-      } catch (trackError) {
-        console.warn("Error tracking search on server:", trackError)
-        // Continue with local tracking if server fails
-      }
-    } catch (error) {
-      console.error("Error in handleSearchComplete:", error)
-    }
-  }
+  }, [router])
 
   const handleLogout = () => {
     AuthService.logout()
-    window.location.href = "/auth/login"
+    toast({
+      title: "May God's peace be with you",
+      description: "You have been safely logged out. Come back anytime for spiritual nourishment.",
+    })
+    router.push("/")
   }
 
-  if (!user) {
+  const handleSaveVerse = (verse: { reference: string; text: string }) => {
+    toast({
+      title: "Verse saved to your heart",
+      description: `${verse.reference} has been added to your collection of treasured scriptures.`,
+    })
+  }
+
+  // Get the correct user ID for components
+  const getUserId = () => {
+    if (!user) return ""
+    return user.id || user.uid || user.email || "anonymous"
+  }
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950">
-        <div className="absolute inset-0 bg-[url('/images/divine-light-background.png')] bg-cover bg-center bg-fixed opacity-10"></div>
-        <div className="relative min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-6"></div>
-            <h1 className="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">Loading Dashboard...</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-2">Please wait while we prepare your Bible dashboard</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
-              If this takes too long, please{" "}
-              <a href="/auth/login" className="text-amber-600 hover:underline font-medium">
-                sign in again
-              </a>
-            </p>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950">
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-xl animate-pulse">
+            <Star className="w-10 h-10 text-white animate-spin" />
           </div>
+          <p className="text-amber-800 dark:text-amber-300 font-medium">Preparing your spiritual sanctuary...</p>
+          <p className="text-sm text-amber-700/70 dark:text-amber-400/70">
+            "Be still and know that I am God" - Psalm 46:10
+          </p>
         </div>
       </div>
     )
   }
 
-  const getTierBadge = (tier: string) => {
-    switch (tier) {
-      case "premium":
-        return (
-          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-            <Crown size={12} className="mr-1" />
-            Premium
-          </Badge>
-        )
-      case "basic":
-        return (
-          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-            <TrendingUp size={12} className="mr-1" />
-            Basic
-          </Badge>
-        )
-      case "annual":
-        return (
-          <Badge className="bg-gradient-to-r from-amber-600 to-yellow-500 text-white">
-            <Crown size={12} className="mr-1" />
-            Annual
-          </Badge>
-        )
-      default:
-        return (
-          <Badge variant="outline" className="border-amber-300 text-amber-700">
-            Free
-          </Badge>
-        )
-    }
-  }
-
-  const handleSaveVerse = (verse: { reference: string; text: string }) => {
-    // Handle saving verse to user's collection
-    console.log("Saving verse:", verse)
-    // This would typically call an API to save the verse
-  }
-
-  // Calculate search usage percentage for progress bar
-  const getSearchUsagePercentage = () => {
-    if (searchLimit === Number.POSITIVE_INFINITY) return 0
-    return Math.min(100, (searchCount / searchLimit) * 100)
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('/images/divine-light-background.png')] bg-cover bg-center bg-fixed opacity-10"></div>
+    <>
+      <SEOHead
+        title="Spiritual Sanctuary | BibleAF - Your Digital Place of Worship"
+        description="Enter your personal spiritual sanctuary with AI-powered Bible study, divine guidance, and soul-nourishing scripture exploration."
+        canonical="/dashboard"
+      />
 
-      <div className="relative container mx-auto p-4 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 font-bold text-2xl">
-                <span className="text-amber-600">Bible</span>
-                <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-1 rounded-lg shadow-lg">
-                  AF
-                </span>
-              </div>
-              <div className="hidden md:block">
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Welcome back, {user.name}!</h1>
-                <p className="text-gray-600 dark:text-gray-400">Continue your spiritual journey</p>
-              </div>
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950">
+        {/* Heavenly Background Elements */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-amber-200/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-1/3 right-20 w-48 h-48 bg-yellow-200/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute bottom-20 left-1/3 w-40 h-40 bg-orange-200/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        </div>
+
+        <div className="relative z-10 container mx-auto px-4 py-8">
+          {/* Debug Info for Development */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="mb-4 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+              <strong>Debug Info:</strong> User ID: {getUserId()}, User Object: {JSON.stringify(user, null, 2)}
             </div>
-            <div className="flex items-center gap-3">
-              {getTierBadge(user.subscription.tier)}
-              <Link href="/settings">
+          )}
+
+          {/* Inspirational Header */}
+          <header className="mb-8 text-center">
+            <div className="divine-light-card rounded-2xl p-8 shadow-2xl mb-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg mr-4">
+                  <Sunrise className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-left">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-yellow-500 bg-clip-text text-transparent">
+                    {greeting}, {user?.name || user?.displayName || "Beloved Child of God"}
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-400">Welcome to your spiritual sanctuary</p>
+                </div>
+              </div>
+
+              <div className="text-center mb-6">
+                <p className="text-lg text-gray-700 dark:text-gray-300 italic mb-2">
+                  "Your word is a lamp for my feet, a light on my path."
+                </p>
+                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">— Psalm 119:105</p>
+              </div>
+
+              <div className="flex justify-center space-x-4">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                  className="border-amber-600 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
+                  onClick={() => router.push("/settings")}
                 >
-                  <Settings size={16} className="mr-2" />
-                  Settings
+                  <Settings className="mr-2 h-4 w-4" />
+                  Personalize Experience
                 </Button>
-              </Link>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-              >
-                <LogOut size={16} className="mr-2" />
-                Logout
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Depart in Peace
+                </Button>
+              </div>
             </div>
-          </div>
+          </header>
 
-          {/* Mobile Header */}
-          <div className="md:hidden mb-6">
-            <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">Welcome back, {user.name}!</h1>
-            <p className="text-gray-600 dark:text-gray-400">Continue your spiritual journey</p>
-          </div>
+          {/* Enhanced Spiritual Navigation */}
+          <Tabs defaultValue="daily" className="space-y-6">
+            <div className="divine-light-card rounded-xl p-2 shadow-lg">
+              <TabsList className="grid w-full grid-cols-6 bg-transparent">
+                <TabsTrigger
+                  value="daily"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                >
+                  <Sunrise className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Daily Bread</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="search"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Seek & Find</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="guidance"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                >
+                  <Compass className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Divine Guidance</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="conversation"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Heart to Heart</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="connections"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                >
+                  <Network className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Connections</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="treasures"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-red-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                >
+                  <Heart className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Heart Treasures</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                      <Search className="text-amber-600" size={16} />
-                      AI Searches Today
-                    </p>
-                    <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
-                      {searchLimit === Number.POSITIVE_INFINITY ? "Unlimited" : `${searchCount}/${searchLimit}`}
-                    </span>
+            {/* Daily Spiritual Nourishment */}
+            <TabsContent value="daily" className="space-y-6">
+              <Card className="divine-light-card border-amber-200 shadow-xl">
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg mb-4">
+                    <Sunrise className="w-6 h-6 text-white" />
                   </div>
-
-                  {/* Progress bar for search usage */}
-                  {searchLimit !== Number.POSITIVE_INFINITY && (
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                      <div
-                        className={`h-2 rounded-full ${
-                          getSearchUsagePercentage() > 80
-                            ? "bg-red-500"
-                            : getSearchUsagePercentage() > 50
-                              ? "bg-amber-500"
-                              : "bg-green-500"
-                        }`}
-                        style={{ width: `${getSearchUsagePercentage()}%` }}
-                      ></div>
-                    </div>
-                  )}
-
-                  {searchLimit !== Number.POSITIVE_INFINITY && searchCount >= searchLimit && (
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                      Limit reached!{" "}
-                      <Link href="/pricing" className="underline">
-                        Upgrade
-                      </Link>
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="text-green-600" size={20} />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Member Since</p>
-                    <p className="font-semibold text-gray-800 dark:text-gray-200">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Heart className="text-red-500" size={20} />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Subscription</p>
-                    <p className="font-semibold text-gray-800 dark:text-gray-200 capitalize">
-                      {user.subscription.tier}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="text-purple-500" size={20} />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Categories</p>
-                    <p className="font-semibold text-gray-800 dark:text-gray-200">
-                      {user.preferences.verseCategories?.length || 0} Selected
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
-          {[
-            { id: "overview", label: "Overview", icon: BookOpen },
-            { id: "search", label: "AI Search", icon: Search },
-            { id: "guidance", label: "Life Guidance", icon: MessageCircle },
-            { id: "saved", label: "Saved Verses", icon: Heart },
-          ].map((tab) => (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? "default" : "outline"}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
-                  : "border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-              }`}
-            >
-              <tab.icon size={16} />
-              {tab.label}
-            </Button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        <div className="space-y-6">
-          {activeTab === "overview" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
-                    <Calendar className="text-amber-600" />
-                    Daily Verse
+                  <CardTitle className="text-2xl bg-gradient-to-r from-amber-600 to-yellow-500 bg-clip-text text-transparent">
+                    Daily Spiritual Nourishment
                   </CardTitle>
+                  <CardDescription className="text-lg">
+                    Receive your daily portion of divine wisdom, lovingly prepared for your spiritual journey
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <DailyVerse userId={user.id} />
+                  <DailyVerse userId={getUserId()} onSaveVerse={handleSaveVerse} />
                 </CardContent>
+                <CardFooter className="flex flex-col space-y-4">
+                  <div className="w-full h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent"></div>
+                  <AIDisclaimer />
+                </CardFooter>
               </Card>
+            </TabsContent>
 
-              <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
-                    <TrendingUp className="text-green-600" />
-                    Quick Actions
+            {/* Seek and Find - Enhanced Bible Search */}
+            <TabsContent value="search" className="space-y-6">
+              <Card className="divine-light-card border-blue-200 shadow-xl">
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg mb-4">
+                    <Search className="w-6 h-6 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                    Seek and You Shall Find
                   </CardTitle>
+                  <CardDescription className="text-lg">
+                    "Ask and it will be given to you; seek and you will find; knock and the door will be opened to you."
+                    - Matthew 7:7
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button
-                    className="w-full justify-start border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                    variant="outline"
-                    onClick={() => setActiveTab("search")}
-                  >
-                    <Search size={16} className="mr-2" />
-                    Search Bible with AI
-                  </Button>
-                  <Button
-                    className="w-full justify-start border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                    variant="outline"
-                    onClick={() => setActiveTab("guidance")}
-                  >
-                    <MessageCircle size={16} className="mr-2" />
-                    Get Life Guidance
-                  </Button>
-                  <Button
-                    className="w-full justify-start border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                    variant="outline"
-                    onClick={() => setActiveTab("saved")}
-                  >
-                    <Heart size={16} className="mr-2" />
-                    View Saved Verses
-                  </Button>
-                  {user.subscription.tier === "free" && (
-                    <Link href="/pricing" className="block">
-                      <Button className="w-full justify-start bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-                        <Crown size={16} className="mr-2" />
-                        Upgrade to Premium
-                      </Button>
-                    </Link>
-                  )}
+                <CardContent>
+                  <AIBibleSearch userId={getUserId()} onSaveVerse={handleSaveVerse} />
                 </CardContent>
+                <CardFooter>
+                  <AIDisclaimer />
+                </CardFooter>
               </Card>
+            </TabsContent>
 
-              {/* Traditional Bible Reading Image */}
-              <Card className="lg:col-span-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row items-center gap-6">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                        Where Tradition Meets Innovation
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        Experience the timeless wisdom of Scripture enhanced by modern AI technology. Our platform
-                        respects the sacred nature of God's Word while making it more accessible than ever.
-                      </p>
-                      <div className="flex gap-4 text-sm">
-                        <span className="flex items-center gap-1 text-amber-600">
-                          <Search size={14} />
-                          AI-Powered Search
-                        </span>
-                        <span className="flex items-center gap-1 text-amber-600">
-                          <MessageCircle size={14} />
-                          Personal Guidance
-                        </span>
-                        <span className="flex items-center gap-1 text-amber-600">
-                          <Heart size={14} />
-                          Save & Reflect
-                        </span>
-                      </div>
-                    </div>
-                    <div className="relative w-full md:w-80">
-                      <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl blur-xl opacity-20"></div>
-                      <Image
-                        src="/images/hand-bible-pages.png"
-                        alt="Traditional Bible reading"
-                        width={320}
-                        height={240}
-                        className="relative w-full h-auto rounded-xl shadow-lg"
-                      />
-                    </div>
+            {/* Divine Guidance - Life Counseling */}
+            <TabsContent value="guidance" className="space-y-6">
+              <Card className="divine-light-card border-green-200 shadow-xl">
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg mb-4">
+                    <Compass className="w-6 h-6 text-white" />
                   </div>
+                  <CardTitle className="text-2xl bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">
+                    Divine Guidance & Comfort
+                  </CardTitle>
+                  <CardDescription className="text-lg">
+                    Bring your burdens, questions, and seeking heart. Find biblical wisdom for life's journey.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <LifeGuidance userId={getUserId()} onSaveVerse={handleSaveVerse} />
                 </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeTab === "search" && (
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
-                  <Search className="text-amber-600" />
-                  AI Bible Search
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AIBibleSearch userId={user.id} onSearchComplete={handleSearchComplete} />
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === "guidance" && (
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
-                  <MessageCircle className="text-green-600" />
-                  Life Guidance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <LifeGuidance
-                  userId={user.id}
-                  onSaveVerse={handleSaveVerse}
-                  onGuidanceComplete={handleSearchComplete}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === "saved" && (
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-amber-200 dark:border-amber-800 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
-                  <Heart className="text-red-600" />
-                  Saved Verses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SavedVersesManager userId={user.id} />
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Upgrade Prompt for Free Users */}
-        {user.subscription.tier === "free" && (
-          <Card className="mt-8 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200 dark:border-purple-800 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">
-                    Unlock Premium Features
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Get unlimited AI searches, advanced guidance, and exclusive content
-                  </p>
-                  <div className="flex gap-4 text-sm">
-                    <span className="flex items-center gap-1 text-purple-600">
-                      <Search size={14} />
-                      Unlimited AI Searches
-                    </span>
-                    <span className="flex items-center gap-1 text-purple-600">
-                      <MessageCircle size={14} />
-                      Advanced Guidance
-                    </span>
-                    <span className="flex items-center gap-1 text-purple-600">
-                      <Heart size={14} />
-                      Unlimited Saved Verses
-                    </span>
+                <CardFooter>
+                  <div className="w-full text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <p className="text-sm text-green-700 dark:text-green-400 italic">
+                      "Come to me, all you who are weary and burdened, and I will give you rest." - Matthew 11:28
+                    </p>
                   </div>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+
+            {/* Heart to Heart Conversations */}
+            <TabsContent value="conversation" className="space-y-6">
+              <Card className="divine-light-card border-purple-200 shadow-xl">
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg mb-4">
+                    <MessageCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                    Heart to Heart Conversations
+                  </CardTitle>
+                  <CardDescription className="text-lg">
+                    Engage in deeper spiritual dialogue and receive personalized biblical counseling
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ConversationalGuidance userId={getUserId()} onSaveVerse={handleSaveVerse} />
+                </CardContent>
+                <CardFooter>
+                  <div className="w-full text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <p className="text-sm text-purple-700 dark:text-purple-400 italic">
+                      "The Lord your God is with you, the Mighty Warrior who saves." - Zephaniah 3:17
+                    </p>
+                  </div>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+
+            {/* Scripture Connections */}
+            <TabsContent value="connections" className="space-y-6">
+              <Card className="divine-light-card border-indigo-200 shadow-xl">
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shadow-lg mb-4">
+                    <Network className="w-6 h-6 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+                    Scripture Connections
+                  </CardTitle>
+                  <CardDescription className="text-lg">
+                    Discover the beautiful tapestry of God's Word through cross-references and thematic connections
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CrossReferenceExplorer reference="John 3:16" onSaveVerse={handleSaveVerse} />
+                </CardContent>
+                <CardFooter>
+                  <div className="w-full text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                    <p className="text-sm text-indigo-700 dark:text-indigo-400 italic">
+                      "All Scripture is God-breathed and is useful for teaching, rebuking, correcting and training in
+                      righteousness." - 2 Timothy 3:16
+                    </p>
+                  </div>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+
+            {/* Heart Treasures - Saved Verses */}
+            <TabsContent value="treasures" className="space-y-6">
+              <Card className="divine-light-card border-red-200 shadow-xl">
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-lg mb-4">
+                    <Heart className="w-6 h-6 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
+                    Treasures of the Heart
+                  </CardTitle>
+                  <CardDescription className="text-lg">
+                    Your personal collection of meaningful scriptures that speak to your soul
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SavedVersesManager userId={getUserId()} />
+                </CardContent>
+                <CardFooter>
+                  <div className="w-full text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <p className="text-sm text-red-700 dark:text-red-400 italic">
+                      "Store up for yourselves treasures in heaven, where moths and vermin do not destroy." - Matthew
+                      6:20
+                    </p>
+                  </div>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Spiritual Growth Invitation */}
+          <Card className="mt-8 divine-light-card border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/50 dark:to-yellow-900/50 shadow-xl">
+            <CardHeader className="text-center">
+              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg mb-4">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+              <CardTitle className="text-2xl text-amber-700 dark:text-amber-400">
+                Deepen Your Spiritual Journey
+              </CardTitle>
+              <CardDescription className="text-lg">
+                Unlock unlimited divine insights and premium spiritual tools to enrich your walk with God
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+                Join thousands of believers who have discovered deeper meaning in Scripture through our premium
+                spiritual companion. Experience unlimited AI-powered insights, audio Scripture readings, and
+                personalized spiritual growth plans.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                  <Shield className="w-8 h-8 text-amber-600 mx-auto mb-2" />
+                  <h4 className="font-semibold text-amber-700 dark:text-amber-400">Unlimited Guidance</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">No limits on AI spiritual counseling</p>
                 </div>
-                <Link href="/pricing">
-                  <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-                    <Crown size={16} className="mr-2" />
-                    Upgrade Now
-                  </Button>
-                </Link>
+                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                  <Book className="w-8 h-8 text-amber-600 mx-auto mb-2" />
+                  <h4 className="font-semibold text-amber-700 dark:text-amber-400">Audio Scripture</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Listen to God's Word with beautiful voices</p>
+                </div>
+                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                  <Star className="w-8 h-8 text-amber-600 mx-auto mb-2" />
+                  <h4 className="font-semibold text-amber-700 dark:text-amber-400">Growth Plans</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Personalized spiritual development</p>
+                </div>
               </div>
             </CardContent>
+            <CardFooter className="text-center">
+              <Button
+                className="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                onClick={() => setIsSubscriptionModalOpen(true)}
+              >
+                Begin Your Premium Journey
+              </Button>
+            </CardFooter>
           </Card>
-        )}
+        </div>
       </div>
-    </div>
+
+      <SubscriptionModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        currentPlan="free"
+        userId={getUserId()}
+      />
+    </>
   )
 }

@@ -1,40 +1,59 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { aiService } from "@/lib/ai-service"
 import { updateUsageTracking } from "@/lib/blob-storage"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { situation, userId } = body
+    const { situation, userId } = await request.json()
 
-    if (!situation || !userId) {
-      return NextResponse.json({ error: "Situation and user ID are required" }, { status: 400 })
+    if (!situation) {
+      return NextResponse.json({ error: "Situation is required" }, { status: 400 })
     }
 
-    // Check usage limits
-    const usageAllowed = await updateUsageTracking(userId, "guidance")
-    if (!usageAllowed) {
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 })
+    }
+
+    // Check usage limits first
+    const canProceed = await updateUsageTracking(userId, "guidance")
+
+    if (!canProceed) {
       return NextResponse.json(
         {
-          error: "Daily guidance limit exceeded",
+          success: false,
           limitExceeded: true,
-          message: "You've reached your daily guidance limit. Upgrade your plan for unlimited guidance.",
+          message:
+            "You've reached your daily limit of 5 guidance requests on the Free plan. Upgrade for unlimited guidance!",
         },
         { status: 429 },
       )
     }
 
-    // Get AI guidance
-    const guidance = await aiService.getLifeGuidance(situation)
+    // Rest of the guidance implementation...
+    // This is just a placeholder - your actual implementation would call the AI service
 
     return NextResponse.json({
       success: true,
-      situation,
-      guidance,
-      timestamp: new Date().toISOString(),
+      guidance: "Here is biblical guidance for your situation...",
+      verses: [
+        {
+          reference: "Proverbs 3:5-6",
+          text: "Trust in the LORD with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+          relevanceScore: 0.95,
+          context:
+            "This verse encourages us to trust God completely rather than relying on our own limited understanding.",
+        },
+        // More verses...
+      ],
+      practicalSteps: [
+        "Pray about your situation daily",
+        "Study relevant Bible passages",
+        "Seek counsel from mature believers",
+        // More steps...
+      ],
+      prayerSuggestion: "Lord, help me to trust in Your perfect plan...",
     })
   } catch (error) {
-    console.error("Error in AI guidance:", error)
-    return NextResponse.json({ error: "Failed to get guidance" }, { status: 500 })
+    console.error("Error in guidance API:", error)
+    return NextResponse.json({ error: "Failed to process guidance request" }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { BibleService } from "@/lib/bible-service"
 import BibleChapterReader from "@/components/bible-chapter-reader"
+import { SEOService } from "@/lib/seo-utils"
 
 interface PageProps {
   params: {
@@ -43,9 +44,10 @@ export default function BibleChapterPage({ params, searchParams }: PageProps) {
   )
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params, searchParams }: PageProps) {
   const bookParam = decodeURIComponent(params.book)
   const chapter = Number.parseInt(params.chapter)
+  const verse = searchParams.verse ? Number.parseInt(searchParams.verse) : undefined
 
   // Handle common book name variations
   let book = bookParam
@@ -53,8 +55,26 @@ export async function generateMetadata({ params }: PageProps) {
     book = "Psalms"
   }
 
+  const seoData = SEOService.generateVersePageSEO(book, chapter, verse)
+
   return {
-    title: `${book} ${chapter} - BibleAF`,
-    description: `Read ${book} chapter ${chapter} with AI-powered insights and audio narration.`,
+    title: seoData.title,
+    description: seoData.description,
+    keywords: seoData.keywords.join(", "),
+    openGraph: {
+      title: seoData.title,
+      description: seoData.description,
+      type: seoData.ogType,
+      images: [seoData.ogImage],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seoData.title,
+      description: seoData.description,
+      images: [seoData.ogImage],
+    },
+    alternates: {
+      canonical: seoData.canonical,
+    },
   }
 }

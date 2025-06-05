@@ -103,6 +103,10 @@ const config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
+  // Production optimizations
+  corePlugins: {
+    preflight: true,
+  },
 } satisfies Config
 
 export default config

@@ -5,6 +5,12 @@ const getServerEnv = (key: string) => {
   if (typeof window !== "undefined") {
     return "" // Client-side, return empty
   }
+
+  // Debug: Log what we're trying to access
+  console.log(`Accessing server env: ${key}`)
+  console.log(`Value exists: ${!!process.env[key]}`)
+  console.log(`Value prefix: ${process.env[key] ? process.env[key]?.substring(0, 8) + "..." : "not found"}`)
+
   return process.env[key] || ""
 }
 
@@ -19,11 +25,16 @@ export const stripeConfig = {
       return !!this.publishableKey
     }
     // Server-side check
+    console.log("Checking Stripe configuration:")
+    console.log("- Secret key exists:", !!this.secretKey)
+    console.log("- Webhook secret exists:", !!this.webhookSecret)
+    console.log("- Publishable key exists:", !!this.publishableKey)
+
     return !!(this.secretKey && this.webhookSecret && this.publishableKey)
   },
 }
 
-// Subscription plans with updated live Stripe price IDs
+// Subscription plans with updated premium pricing
 export interface SubscriptionPlan {
   id: string
   name: string
@@ -41,53 +52,60 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     id: "basic",
     name: "Basic",
     description: "Essential features for daily Bible study",
-    price: 499, // $4.99
+    price: 1000, // $10.00/month
     interval: "month",
     features: [
       "Unlimited Bible reading",
-      "20 AI-powered searches per day",
-      "10 Life guidance requests per day",
-      "Save up to 100 verses",
+      "50 AI-powered searches per day",
+      "25 Life guidance requests per day",
+      "Save up to 500 verses",
+      "Text-to-speech for verses",
       "Dark/light mode",
       "Offline access",
+      "Cross-references",
     ],
-    searchesPerDay: 20,
-    stripePriceId: "price_1RUrjRBiT317Uae5TiLEGTsD", // Live price ID for $4.99/month
+    searchesPerDay: 50,
+    stripePriceId: "price_1RVyfVBiT317Uae5Qya65rqk", // Updated price ID for $10/month
   },
   {
     id: "premium",
     name: "Premium",
     description: "Advanced features for deeper spiritual growth",
-    price: 1999, // $19.99
+    price: 2500, // $25.00/month
     interval: "month",
     features: [
       "All Basic features",
       "Unlimited AI-powered searches",
       "Unlimited Life guidance requests",
       "Unlimited saved verses",
-      "Advanced verse tagging",
+      "Advanced verse tagging and notes",
       "Reading progress tracking",
+      "Commentary access",
+      "Original language tools",
       "Priority support",
+      "Export study notes",
     ],
     searchesPerDay: Number.POSITIVE_INFINITY,
-    stripePriceId: "price_1RUrkHBiT317Uae5OtdFxSdn", // Live price ID for $19.99/month
+    stripePriceId: "price_1RVyFZBiT317Uae5inarwN6d", // Updated premium price ID for $25/month
     popular: true,
   },
   {
     id: "annual",
     name: "Annual Premium",
-    description: "Best value with 1 month free",
-    price: 9999, // $99.99
+    description: "Best value - save $175 per year!",
+    price: 12500, // $125.00/year (equivalent to $10.42/month)
     interval: "year",
     features: [
       "All Premium features",
-      "1 month free",
+      "Save $175 compared to monthly billing",
       "Early access to new features",
       "Downloadable study materials",
       "VIP support",
+      "Annual progress reports",
+      "Exclusive webinars",
     ],
     searchesPerDay: Number.POSITIVE_INFINITY,
-    stripePriceId: "price_1RUrlCBiT317Uae5W9CKifrf", // Live price ID for $99.99/year
+    stripePriceId: "price_1RVxMuBiT317Uae5cW1AaVPT", // Annual price ID for $125/year
   },
 ]
 
@@ -95,12 +113,15 @@ export const FREE_TIER = {
   id: "free",
   name: "Free",
   description: "Try BibleAF with limited features",
-  searchesPerDay: 5,
+  searchesPerDay: 5, // Strict 5 search limit
+  guidancePerDay: 3,
+  savedVerses: 10,
   features: [
-    "Bible reading",
+    "Bible reading access",
     "5 AI-powered searches per day",
     "3 Life guidance requests per day",
     "Save up to 10 verses",
+    "Basic cross-references",
   ],
 }
 
@@ -115,4 +136,18 @@ export const formatPrice = (price: number): string => {
 // Get plan by ID
 export const getPlanById = (planId: string): SubscriptionPlan | null => {
   return SUBSCRIPTION_PLANS.find((plan) => plan.id === planId) || null
+}
+
+// Calculate savings for annual plan
+export const getAnnualSavings = (): { amount: number; percentage: number } => {
+  const premiumMonthly = SUBSCRIPTION_PLANS.find((p) => p.id === "premium")?.price || 2500
+  const annualPlan = SUBSCRIPTION_PLANS.find((p) => p.id === "annual")?.price || 12500
+  const monthlyEquivalent = premiumMonthly * 12
+  const savings = monthlyEquivalent - annualPlan
+  const percentage = Math.round((savings / monthlyEquivalent) * 100)
+
+  return {
+    amount: savings,
+    percentage,
+  }
 }

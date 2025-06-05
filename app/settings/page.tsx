@@ -1,157 +1,106 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Trash2, RefreshCw, Database } from "lucide-react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { AuthService } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { VoiceSettings } from "@/components/voice-settings"
-import { clearAudioCache, getAudioCacheStats } from "@/lib/offline-audio-cache"
-import { clearTTSMemoryCache, getTTSMemoryCacheSize } from "@/lib/tts-client"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { UserPreferences } from "@/components/user-preferences"
+import { SEOHead } from "@/components/seo-head"
+import { ArrowLeft } from "lucide-react"
 
 export default function SettingsPage() {
-  const [offlineCacheStats, setOfflineCacheStats] = useState({ count: 0, size: 0 })
-  const [memoryCacheSize, setMemoryCacheSize] = useState(0)
-  const [isClearing, setIsClearing] = useState(false)
-  const [offlineMode, setOfflineMode] = useState(false)
-  const [autoDownload, setAutoDownload] = useState(false)
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Load settings from localStorage
-    if (typeof window !== "undefined") {
-      setOfflineMode(localStorage.getItem("offline_mode") === "true")
-      setAutoDownload(localStorage.getItem("auto_download_audio") === "true")
+    const currentUser = AuthService.getCurrentUser()
+    if (!currentUser) {
+      router.push("/auth/login")
+      return
     }
+    setUser(currentUser)
+    setIsLoading(false)
+  }, [router])
 
-    // Get cache stats
-    updateCacheStats()
-  }, [])
-
-  const updateCacheStats = async () => {
-    const stats = await getAudioCacheStats()
-    setOfflineCacheStats(stats)
-    setMemoryCacheSize(getTTSMemoryCacheSize())
-  }
-
-  const handleClearCache = async () => {
-    setIsClearing(true)
-    await clearAudioCache()
-    clearTTSMemoryCache()
-    await updateCacheStats()
-    setIsClearing(false)
-  }
-
-  const toggleOfflineMode = (value: boolean) => {
-    setOfflineMode(value)
-    localStorage.setItem("offline_mode", value.toString())
-  }
-
-  const toggleAutoDownload = (value: boolean) => {
-    setAutoDownload(value)
-    localStorage.setItem("auto_download_audio", value.toString())
-  }
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const sizes = ["Bytes", "KB", "MB", "GB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-16 w-16 animate-spin rounded-full border-4 border-amber-600 border-t-transparent"></div>
+      </div>
+    )
   }
 
   return (
-    <div className="container max-w-4xl py-8">
-      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+    <>
+      <SEOHead
+        title="Settings | BibleAF - AI-Powered Bible Study"
+        description="Customize your BibleAF experience with personalized settings and preferences."
+        canonical="/settings"
+      />
 
-      <div className="grid gap-6">
-        {/* Voice Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Voice Settings</CardTitle>
-            <CardDescription>Configure your preferred voice for text-to-speech</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <VoiceSettings className="w-full" />
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-6">
+            <Link href="/dashboard">
+              <Button variant="ghost" className="pl-0">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </div>
 
-        {/* Offline Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Offline Settings</CardTitle>
-            <CardDescription>Configure offline behavior and cache management</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="offline-mode">Offline Mode</Label>
-                <p className="text-sm text-muted-foreground">Use cached audio when offline</p>
-              </div>
-              <Switch id="offline-mode" checked={offlineMode} onCheckedChange={toggleOfflineMode} />
-            </div>
+          <header className="mb-8">
+            <h1 className="text-3xl font-bold text-amber-600">Settings</h1>
+            <p className="text-gray-600 dark:text-gray-400">Customize your BibleAF experience</p>
+          </header>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="auto-download">Auto Download</Label>
-                <p className="text-sm text-muted-foreground">Automatically download audio for offline use</p>
-              </div>
-              <Switch id="auto-download" checked={autoDownload} onCheckedChange={toggleAutoDownload} />
-            </div>
-
-            <Separator />
-
+          <div className="grid gap-8 md:grid-cols-2">
             <div>
-              <h3 className="text-sm font-medium mb-2">Audio Cache</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Database className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Offline Cache</span>
-                  </div>
-                  <p className="text-2xl font-bold">{offlineCacheStats.count} items</p>
-                  <p className="text-sm text-muted-foreground">{formatBytes(offlineCacheStats.size)}</p>
-                </div>
-
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Database className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Memory Cache</span>
-                  </div>
-                  <p className="text-2xl font-bold">{formatBytes(memoryCacheSize * 1024 * 1024)}</p>
-                  <p className="text-sm text-muted-foreground">Current session only</p>
-                </div>
-              </div>
+              <UserPreferences userId={user?.uid} />
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" size="sm" onClick={updateCacheStats} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Refresh Stats
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleClearCache}
-              disabled={isClearing || (offlineCacheStats.count === 0 && memoryCacheSize === 0)}
-              className="gap-2"
-            >
-              {isClearing ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Clearing...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4" />
-                  Clear All Caches
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
+
+            <div className="space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Settings</CardTitle>
+                  <CardDescription>Manage your account details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium">Email</p>
+                    <p className="text-gray-600 dark:text-gray-400">{user?.email}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Button variant="outline" className="w-full">
+                      Change Password
+                    </Button>
+                    <Button variant="outline" className="w-full text-red-600 hover:bg-red-50 hover:text-red-700">
+                      Delete Account
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Subscription</CardTitle>
+                  <CardDescription>Manage your subscription plan</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium">Current Plan</p>
+                    <p className="text-gray-600 dark:text-gray-400">Free Plan</p>
+                  </div>
+                  <Button className="w-full bg-amber-600 hover:bg-amber-700">Upgrade to Premium</Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

@@ -4,15 +4,39 @@ export interface StripeValidationResult {
   isValid: boolean
   errors: string[]
   warnings: string[]
+  debug?: any
 }
 
 export function validateStripeConfiguration(): StripeValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
+  const debug: any = {}
 
-  // Check environment variables - using direct process.env for server-side
+  // Debug: Show what we can access
+  debug.serverSide = typeof window === "undefined"
+  debug.stripeSecretKeyExists = !!process.env.STRIPE_SECRET_KEY
+  debug.stripeSecretKeyPrefix = process.env.STRIPE_SECRET_KEY
+    ? process.env.STRIPE_SECRET_KEY.substring(0, 8) + "..."
+    : "not found"
+  debug.allStripeVars = Object.keys(process.env).filter((key) => key.includes("STRIPE"))
+  debug.processEnvKeys = Object.keys(process.env)
+    .filter((key) => key.startsWith("STRIPE"))
+    .sort()
+
+  // Check environment variables
   if (typeof window === "undefined") {
     // Server-side checks
+    console.log("=== Stripe Validation Debug ===")
+    console.log("STRIPE_SECRET_KEY exists:", !!process.env.STRIPE_SECRET_KEY)
+    console.log(
+      "STRIPE_SECRET_KEY value:",
+      process.env.STRIPE_SECRET_KEY ? "***" + process.env.STRIPE_SECRET_KEY.slice(-4) : "undefined",
+    )
+    console.log(
+      "All STRIPE env vars:",
+      Object.keys(process.env).filter((key) => key.includes("STRIPE")),
+    )
+
     if (!process.env.STRIPE_SECRET_KEY) {
       errors.push("STRIPE_SECRET_KEY environment variable is missing")
     } else if (!process.env.STRIPE_SECRET_KEY.startsWith("sk_")) {
@@ -70,6 +94,7 @@ export function validateStripeConfiguration(): StripeValidationResult {
     isValid: errors.length === 0,
     errors,
     warnings,
+    debug,
   }
 }
 

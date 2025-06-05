@@ -1,11 +1,29 @@
 {
-  "name": "BibleAF",
+  "name": "BibleAF - AI-Powered Bible Study",
   "short_name": "BibleAF",
-  "description": "AI-powered spiritual companion with Bible search, life guidance, and personalized verses",
+  "description": "AI-powered Bible study tool offering smart verse search, daily devotionals, and spiritual guidance",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#e9b949",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["education", "lifestyle", "books"],
+  "screenshots": [
+    {
+      "src": "/images/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/images/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -16,12 +34,30 @@
     {
       "src": "/icons/icon-384x384.png",
       "sizes": "384x384",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Daily Verse",
+      "short_name": "Daily",
+      "description": "Get today's verse with AI insights",
+      "url": "/dashboard?tab=daily",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Bible Search",
+      "short_name": "Search",
+      "description": "Search Scripture with AI",
+      "url": "/dashboard?tab=search",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

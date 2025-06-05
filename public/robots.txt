@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /test*/
+Disallow: /debug*/
+
+# Allow public pages
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /pricing
+Allow: /bible/
+Allow: /topics/
+Allow: /daily-verse
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://bibleaf.ai/api/sitemap

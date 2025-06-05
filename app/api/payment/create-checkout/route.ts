@@ -1,18 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createCheckoutSession } from "../../../../lib/stripe-server"
 import { clientEnv } from "../../../../lib/env-client"
-import { serverEnv } from "../../../../lib/env-server"
+import { serverEnv, debugServerEnv } from "../../../../lib/env-server"
 import { SUBSCRIPTION_PLANS } from "../../../../lib/stripe-config"
+import { stripeInstance } from "../../../../lib/stripe-server"
 
 export async function POST(request: NextRequest) {
   console.log("=== Checkout API Route Called ===")
 
   try {
-    // Check environment variables first
-    console.log("Checking environment variables...")
+    // Debug environment variables first
+    debugServerEnv()
 
-    if (!serverEnv.STRIPE_SECRET_KEY) {
-      console.error("STRIPE_SECRET_KEY is missing")
+    // Check environment variables with better error messages
+    console.log("Checking environment variables...")
+    console.log("Direct process.env.STRIPE_SECRET_KEY exists:", !!process.env.STRIPE_SECRET_KEY)
+    console.log("serverEnv.STRIPE_SECRET_KEY exists:", !!serverEnv.STRIPE_SECRET_KEY)
+
+    // Use direct process.env access as fallback
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY || serverEnv.STRIPE_SECRET_KEY
+
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY is missing from both process.env and serverEnv")
       return NextResponse.json(
         {
           error: "Stripe configuration error",
@@ -23,8 +31,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!serverEnv.STRIPE_SECRET_KEY.startsWith("sk_")) {
-      console.error("STRIPE_SECRET_KEY has invalid format:", serverEnv.STRIPE_SECRET_KEY.substring(0, 10))
+    if (!stripeSecretKey.startsWith("sk_")) {
+      console.error("STRIPE_SECRET_KEY has invalid format:", stripeSecretKey.substring(0, 10))
       return NextResponse.json(
         {
           error: "Stripe configuration error",
@@ -87,7 +95,7 @@ export async function POST(request: NextRequest) {
       console.error(`Plan not found: ${planId}`)
       console.log(
         "Available plans:",
-        SUBSCRIPTION_PLANS.map((p) => p.id),
+        SUBSCRIPTION_PLANS.map((p) => ({ id: p.id, name: p.name, stripePriceId: p.stripePriceId })),
       )
       return NextResponse.json(
         {
@@ -98,6 +106,8 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       )
     }
+
+    console.log(`Plan found: ${plan.name} (${plan.id}) with price ID: ${plan.stripePriceId}`)
 
     // Check if plan has price ID
     if (!plan.stripePriceId) {
@@ -125,7 +135,119 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`Plan found: ${plan.name} with price ID: ${plan.stripePriceId}`)
+    // Check if Stripe is initialized
+    if (!stripeInstance) {
+      console.error("Stripe instance is not initialized")
+      return NextResponse.json(
+        {
+          error: "Stripe configuration error",
+          message: "Stripe is not properly initialized",
+          success: false,
+        },
+        { status: 500 },
+      )
+    }
+
+    // Validate the price exists and is recurring
+    try {
+      console.log(`Validating price ID: ${plan.stripePriceId}`)
+      const price = await stripeInstance.prices.retrieve(plan.stripePriceId)
+
+      console.log("Price details:", {
+        id: price.id,
+        type: price.type,
+        recurring: price.recurring,
+        active: price.active,
+        currency: price.currency,
+        unit_amount: price.unit_amount,
+      })
+
+      if (!price.active) {
+        console.error(`Price ${plan.stripePriceId} is not active`)
+        return NextResponse.json(
+          {
+            error: "Price configuration error",
+            message: `Price '${plan.stripePriceId}' is not active in Stripe. Please activate it in your Stripe dashboard.`,
+            success: false,
+          },
+          { status: 400 },
+        )
+      }
+
+      if (price.type !== "recurring") {
+        console.error(`Price ${plan.stripePriceId} is not recurring. Type: ${price.type}`)
+        return NextResponse.json(
+          {
+            error: "Price configuration error",
+            message: `Price '${plan.stripePriceId}' must be a recurring price for subscriptions. Current type: ${price.type}. Please create a recurring price in your Stripe dashboard.`,
+            success: false,
+          },
+          { status: 400 },
+        )
+      }
+
+      if (!price.recurring) {
+        console.error(`Price ${plan.stripePriceId} has no recurring configuration`)
+        return NextResponse.json(
+          {
+            error: "Price configuration error",
+            message: `Price '${plan.stripePriceId}' is missing recurring configuration. Please set up recurring billing in your Stripe dashboard.`,
+            success: false,
+          },
+          { status: 400 },
+        )
+      }
+
+      // Validate the interval matches our plan
+      const expectedInterval = plan.interval === "year" ? "year" : "month"
+      if (price.recurring.interval !== expectedInterval) {
+        console.error(`Price interval mismatch. Expected: ${expectedInterval}, Got: ${price.recurring.interval}`)
+        return NextResponse.json(
+          {
+            error: "Price configuration error",
+            message: `Price '${plan.stripePriceId}' has interval '${price.recurring.interval}' but plan expects '${expectedInterval}'. Please create a price with the correct interval.`,
+            success: false,
+          },
+          { status: 400 },
+        )
+      }
+
+      console.log(`✅ Price validation successful for ${plan.stripePriceId}`)
+    } catch (priceError) {
+      console.error("Price validation failed:", priceError)
+
+      if (priceError instanceof Error) {
+        if (priceError.message.includes("No such price")) {
+          return NextResponse.json(
+            {
+              error: "Price not found",
+              message: `Price '${plan.stripePriceId}' does not exist in your Stripe account. Please create it in your Stripe dashboard.`,
+              success: false,
+            },
+            { status: 400 },
+          )
+        }
+        if (priceError.message.includes("Invalid API Key")) {
+          return NextResponse.json(
+            {
+              error: "Stripe configuration error",
+              message: "Invalid Stripe API key. Please check your STRIPE_SECRET_KEY environment variable.",
+              success: false,
+            },
+            { status: 500 },
+          )
+        }
+      }
+
+      return NextResponse.json(
+        {
+          error: "Price validation error",
+          message: `Failed to validate price: ${priceError instanceof Error ? priceError.message : "Unknown error"}`,
+          success: false,
+        },
+        { status: 500 },
+      )
+    }
 
     // Use provided userId or generate a test one
     const userIdToUse = userId || `test-user-${Date.now()}`
@@ -145,56 +267,91 @@ export async function POST(request: NextRequest) {
       priceId: plan.stripePriceId,
     })
 
-    // Create a checkout session
-    const { url, sessionId } = await createCheckoutSession({
-      planId,
-      userId: userIdToUse,
-      successUrl: finalSuccessUrl,
-      cancelUrl: finalCancelUrl,
-    })
+    // Create a checkout session with proper error handling
+    try {
+      const session = await stripeInstance.checkout.sessions.create({
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: plan.stripePriceId,
+            quantity: 1,
+          },
+        ],
+        success_url: finalSuccessUrl,
+        cancel_url: finalCancelUrl,
+        client_reference_id: userIdToUse,
+        metadata: {
+          userId: userIdToUse,
+          planId: plan.id,
+          planName: plan.name,
+          planInterval: plan.interval,
+          planPrice: plan.price.toString(),
+        },
+        allow_promotion_codes: true,
+        billing_address_collection: "required",
+        subscription_data: {
+          metadata: {
+            userId: userIdToUse,
+            planId: plan.id,
+            planInterval: plan.interval,
+          },
+        },
+      })
 
-    console.log("Checkout session created successfully:", { sessionId, url })
+      const url = session.url
+      const sessionId = session.id
 
-    // Return the checkout URL
-    return NextResponse.json({
-      url,
-      sessionId,
-      success: true,
-    })
+      console.log("Checkout session created successfully:", { sessionId, url })
+
+      // Return the checkout URL
+      return NextResponse.json({
+        url,
+        sessionId,
+        success: true,
+      })
+    } catch (stripeError) {
+      console.error("Stripe checkout session creation error:", stripeError)
+
+      // Handle specific Stripe errors
+      if (stripeError instanceof Error) {
+        if (stripeError.message.includes("recurring price")) {
+          return NextResponse.json(
+            {
+              error: "Price configuration error",
+              message: `The price '${plan.stripePriceId}' must be configured as a recurring price in Stripe. Please go to your Stripe dashboard and create a recurring price for $${(plan.price / 100).toFixed(2)}/${plan.interval}.`,
+              success: false,
+            },
+            { status: 400 },
+          )
+        }
+      }
+
+      // Ensure we return a proper JSON response
+      return NextResponse.json(
+        {
+          error: "Stripe error",
+          message: stripeError instanceof Error ? stripeError.message : "Unknown Stripe error",
+          success: false,
+        },
+        { status: 500 },
+      )
+    }
   } catch (error) {
     console.error("=== Checkout API Error ===")
     console.error("Error type:", typeof error)
     console.error("Error message:", error instanceof Error ? error.message : "Unknown error")
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace")
 
-    // Handle specific Stripe errors
-    let errorMessage = "Unknown error occurred"
-    let statusCode = 500
-
-    if (error instanceof Error) {
-      errorMessage = error.message
-
-      // Handle specific Stripe API errors
-      if (error.message.includes("No such price")) {
-        errorMessage = `Stripe price not found. Please check your Stripe dashboard for the price ID.`
-        statusCode = 400
-      } else if (error.message.includes("Invalid API Key")) {
-        errorMessage = "Invalid Stripe API key. Please check your STRIPE_SECRET_KEY."
-        statusCode = 500
-      } else if (error.message.includes("testmode")) {
-        errorMessage = "Stripe key/price ID mismatch. Ensure you're using test keys with test prices."
-        statusCode = 400
-      }
-    }
-
+    // Always return a valid JSON response
     return NextResponse.json(
       {
         error: "Failed to create checkout session",
-        message: errorMessage,
+        message: error instanceof Error ? error.message : "Unknown error occurred",
         success: false,
         timestamp: new Date().toISOString(),
       },
-      { status: statusCode },
+      { status: 500 },
     )
   }
 }

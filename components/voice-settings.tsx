@@ -20,7 +20,7 @@ interface VoiceSettingsProps {
 }
 
 const DEFAULT_SETTINGS: VoiceSettings = {
-  voiceId: "pNInz6obpgDQGcFmaJgB", // Default voice ID
+  voiceId: "ErXwobaYiN019PkySvjV", // Default voice ID
   stability: 0.5,
   similarityBoost: 0.75,
 }
