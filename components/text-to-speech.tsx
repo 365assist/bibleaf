@@ -202,32 +202,35 @@ export function TextToSpeech({
     [cleanupAudio],
   )
 
+  const buttonClasses = "p-2 rounded-full hover:bg-muted transition-colors disabled:opacity-50"
+  const iconClasses = "h-5 w-5"
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <button
         onClick={handlePlay}
         disabled={isLoading}
-        className="p-2 rounded-full hover:bg-muted transition-colors disabled:opacity-50"
+        className={buttonClasses}
         aria-label={isPlaying ? "Pause speech" : "Play speech"}
         title={isPlaying ? "Pause" : `Listen (${voiceName})`}
       >
         {isLoading ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <Loader2 className={`${iconClasses} animate-spin`} />
         ) : isPlaying ? (
-          <Pause className="h-5 w-5" />
+          <Pause className={iconClasses} />
         ) : (
-          <Play className="h-5 w-5" />
+          <Play className={iconClasses} />
         )}
       </button>
 
       {(isPlaying || audioRef.current) && (
         <button
           onClick={toggleMute}
-          className="p-2 rounded-full hover:bg-muted transition-colors"
+          className={buttonClasses}
           aria-label={isMuted ? "Unmute" : "Mute"}
           title={isMuted ? "Unmute" : "Mute"}
         >
-          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+          {isMuted ? <VolumeX className={iconClasses} /> : <Volume2 className={iconClasses} />}
         </button>
       )}
 

@@ -60,7 +60,6 @@ export function VoiceSettings({ onSettingsChange, initialSettings }: VoiceSettin
           </div>
 
           <div className="space-y-4">
-            {/* Voice Selection */}
             <div className="space-y-2">
               <Label htmlFor="voice-select">Voice</Label>
               <Select value={settings.voiceId} onValueChange={(value) => updateSettings({ voiceId: value })}>
@@ -80,7 +79,6 @@ export function VoiceSettings({ onSettingsChange, initialSettings }: VoiceSettin
               </Select>
             </div>
 
-            {/* Stability */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="stability">Stability</Label>
@@ -100,7 +98,6 @@ export function VoiceSettings({ onSettingsChange, initialSettings }: VoiceSettin
               </p>
             </div>
 
-            {/* Similarity Boost */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="similarity">Similarity Boost</Label>
@@ -120,11 +117,10 @@ export function VoiceSettings({ onSettingsChange, initialSettings }: VoiceSettin
               </p>
             </div>
 
-            {/* Speed */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="speed">Speed</Label>
-                <span className="text-sm text-muted-foreground">{settings.speed?.toFixed(1)}x</span>
+                <span className="text-sm text-muted-foreground">{(settings.speed || 1.0).toFixed(1)}x</span>
               </div>
               <Slider
                 id="speed"
@@ -138,11 +134,10 @@ export function VoiceSettings({ onSettingsChange, initialSettings }: VoiceSettin
               <p className="text-xs text-muted-foreground">Adjust playback speed</p>
             </div>
 
-            {/* Pitch */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="pitch">Pitch</Label>
-                <span className="text-sm text-muted-foreground">{settings.pitch?.toFixed(1)}x</span>
+                <span className="text-sm text-muted-foreground">{(settings.pitch || 1.0).toFixed(1)}x</span>
               </div>
               <Slider
                 id="pitch"
