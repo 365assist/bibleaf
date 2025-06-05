@@ -2,7 +2,7 @@
 export const isServer = typeof window === "undefined"
 export const isClient = !isServer
 
-// Import from the new env.ts file
+// Import from the env.ts file
 import { clientEnv, serverEnv, features } from "./env"
 
 // Re-export for backwards compatibility
@@ -14,6 +14,10 @@ export const getAppUrl = () => {
     return window.location.origin
   }
   return clientEnv.NEXT_PUBLIC_APP_URL
+}
+
+export const getApiUrl = () => {
+  return clientEnv.NEXT_PUBLIC_API_URL
 }
 
 export const isDevelopment = () => {
@@ -40,27 +44,11 @@ export function safeGetEnv(key: string): string {
   return process.env[key] || ""
 }
 
-// Prevent client-side access to server-only environment variables
-export function preventClientAccess(variableName: string): string {
-  // Build-time only variables - silently return empty string
-  const buildTimeVars = ["NPM_RC", "NPM_TOKEN", "ANALYZE", "BUNDLE_ANALYZE"]
-
-  if (buildTimeVars.includes(variableName)) {
-    return "" // No warning for build-time variables
-  }
-
-  if (isClient) {
-    console.warn(`${variableName} cannot be accessed on the client.`)
-    return ""
-  }
-
-  return process.env[variableName] || ""
-}
-
 // App configuration that works on both client and server
 export const appConfig = {
   appName: "BibleAF",
   appDescription: "AI-Powered Bible Study and Life Guidance",
   appUrl: getAppUrl(),
+  apiUrl: getApiUrl(),
   isDev: isDevelopment(),
 }

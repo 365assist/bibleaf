@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're Offline - BibleAF</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #2d3748;
+    }
+    p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4a5568;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
+    .button:hover {
+      background-color: #2d3748;
+    }
+    .verse {
+      font-style: italic;
+      margin: 2rem 0;
+      padding: 1rem;
+      background-color: #f1f5f9;
+      border-left: 4px solid #4a5568;
+      border-radius: 4px;
+    }
+    .cached-content {
+      margin-top: 2rem;
+      text-align: left;
+    }
+    .cached-item {
+      background-color: white;
+      padding: 1rem;
+      border-radius: 0.25rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📶</div>
+    <h1>You're Offline</h1>
+    <p>It looks like you don't have an internet connection right now. Some features of BibleAF require an internet connection to work properly.</p>
+    
+    <div class="verse">
+      "I can do all things through Christ who strengthens me." — Philippians 4:13
+    </div>
+    
+    <p>You can try:</p>
+    <ul style="text-align: left;">
+      <li>Checking your network connection</li>
+      <li>Accessing previously viewed content (if available offline)</li>
+      <li>Coming back when you have internet access</li>
+    </ul>
+    
+    <a href="/" class="button">Try Again</a>
+    
+    <div id="cached-content" class="cached-content">
+      <h2>Available Offline Content</h2>
+      <div id="cached-items"></div>
+    </div>
+  </div>
+
+  <script>
+    // Display cached content if available
+    async function showCachedContent() {
+      try {
+        const cache = await caches.open('bibleaf-dynamic-v1')
+        const keys = await cache.keys()
+        const cachedItems = document.getElementById('cached-items')
+        
+        if (keys.length === 0) {
+          cachedItems.innerHTML = '<p>No cached content available.</p>'
+          return
+        }
+        
+        // Filter and display Bible content
+        const bibleItems = keys.filter(key => 
+          key.url.includes('/api/bible/') || 
+          key.url.includes('/bible/')
+        )
+        
+        if (bibleItems.length === 0) {
+          cachedItems.innerHTML = '<p>No Bible content available offline.</p>'
+          return
+        }
+        
+        // Display up to 5 items
+        const itemsToShow = bibleItems.slice(0, 5)
+        let html = ''
+        
+        for (const item of itemsToShow) {
+          const url = new URL(item.url)
+          const path = url.pathname
+          let displayName = path
+          
+          // Format display name
+          if (path.includes('/api/bible/verse')) {
+            const params = new URLSearchParams(url.search)
+            const ref = params.get('reference')
+            displayName = ref ? `Verse: ${ref}` : 'Bible Verse'
+          } else if (path.includes('/api/bible/chapter')) {
+            const params = new URLSearchParams(url.search)
+            const book = params.get('book')
+            const chapter = params.get('chapter')
+            displayName = book && chapter ? `${book} ${chapter}` : 'Bible Chapter'
+          } else if (path.includes('/bible/')) {
+            const parts = path.split('/')
+            if (parts.length >= 4) {
+              displayName = `${parts[2]} ${parts[3]}`
+            }
+          }
+          
+          html += `<div class="cached-item">
+            <a href="${item.url}">${displayName}</a>
+          </div>`
+        }
+        
+        cachedItems.innerHTML = html
+      } catch (err) {
+        console.error('Error displaying cached content:', err)
+      }
+    }
+    
+    // Run when page loads
+    window.addEventListener('load', showCachedContent)
+  </script>
+</body>
+</html>

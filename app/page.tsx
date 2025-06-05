@@ -1,282 +1,248 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import type { Metadata } from "next"
 import Link from "next/link"
-import Image from "next/image"
-import { useTheme } from "next-themes"
-import { AuthService } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Brain, Book, Heart, Zap, Users, Star, Moon, Sun } from "lucide-react"
-import InteractiveDemo from "@/components/interactive-demo"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { MainNavigation } from "@/components/main-navigation"
 import { SEOHead } from "@/components/seo-head"
+import { StructuredDataService } from "@/lib/structured-data"
+import { Search, Heart, MessageCircle, Sparkles, Users, Shield, ArrowRight, Gift, Star, Play } from "lucide-react"
 
-export default function Home() {
-  const { theme, setTheme } = useTheme()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [mounted, setMounted] = useState(false)
+// Generate static metadata for better SEO
+export const metadata: Metadata = {
+  title: "BibleAF - AI-Powered Bible Study & Spiritual Guidance",
+  description:
+    "Experience Scripture like never before with AI-powered insights, daily devotionals, spiritual guidance, and pastoral support. Join thousands discovering deeper faith through intelligent Bible study.",
+  keywords: [
+    "Bible study",
+    "AI Bible",
+    "spiritual guidance",
+    "daily devotionals",
+    "Christian app",
+    "biblical insights",
+    "scripture search",
+    "faith journey",
+    "pastoral care",
+    "Bible verses",
+  ],
+  openGraph: {
+    title: "BibleAF - AI-Powered Bible Study & Spiritual Guidance",
+    description: "Experience Scripture like never before with AI-powered insights and spiritual guidance",
+    type: "website",
+    images: [
+      {
+        url: "/images/divine-light-background.png",
+        width: 1200,
+        height: 630,
+        alt: "BibleAF - AI-Powered Bible Study",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BibleAF - AI-Powered Bible Study",
+    description: "Experience Scripture with AI-powered insights and spiritual guidance",
+  },
+}
 
-  useEffect(() => {
-    setMounted(true)
-    const user = AuthService.getCurrentUser()
-    setIsLoggedIn(!!user)
-  }, [])
+// Main features data for better maintainability
+const mainFeatures = [
+  {
+    title: "AI-Powered Bible Search",
+    description:
+      "Find exactly what you're looking for with intelligent Scripture search that understands context and meaning",
+    icon: Search,
+    href: "/dashboard",
+    color: "from-blue-500 to-blue-600",
+    badge: "Smart Search",
+  },
+  {
+    title: "Daily Verse & Devotional",
+    description: "Start each day with personally curated verses and AI-generated reflections for spiritual growth",
+    icon: Gift,
+    href: "/daily-verse",
+    color: "from-amber-500 to-orange-500",
+    badge: "Daily Inspiration",
+  },
+  {
+    title: "Life Guidance",
+    description: "Receive biblical wisdom and pastoral guidance for life's decisions and challenges",
+    icon: Heart,
+    href: "/guidance",
+    color: "from-green-500 to-emerald-500",
+    badge: "Divine Wisdom",
+  },
+  {
+    title: "Heart to Heart",
+    description: "Experience compassionate spiritual conversations for emotional support and encouragement",
+    icon: MessageCircle,
+    href: "/heart-to-heart",
+    color: "from-purple-500 to-violet-500",
+    badge: "Pastoral Care",
+  },
+]
 
-  const features = [
-    {
-      icon: <Brain className="h-8 w-8 text-amber-600" />,
-      title: "AI-Powered Search",
-      description:
-        "Find relevant Bible verses instantly with intelligent AI search that understands context and meaning.",
-    },
-    {
-      icon: <Book className="h-8 w-8 text-amber-600" />,
-      title: "Daily Verses",
-      description: "Receive personalized daily verses with AI-generated insights tailored to your spiritual journey.",
-    },
-    {
-      icon: <Heart className="h-8 w-8 text-amber-600" />,
-      title: "Life Guidance",
-      description: "Get biblical wisdom and guidance for life's challenges through AI-powered spiritual counseling.",
-    },
-    {
-      icon: <Zap className="h-8 w-8 text-amber-600" />,
-      title: "Text-to-Speech",
-      description: "Listen to scripture with high-quality AI voices for a more immersive experience.",
-    },
-  ]
+const testimonials = [
+  {
+    name: "Sarah M.",
+    role: "Youth Pastor",
+    content:
+      "BibleAF has transformed how I prepare sermons. The AI insights help me find connections I never saw before.",
+    rating: 5,
+  },
+  {
+    name: "David L.",
+    role: "Seminary Student",
+    content: "The theological depth combined with practical application makes this indispensable for my studies.",
+    rating: 5,
+  },
+  {
+    name: "Maria R.",
+    role: "Working Mother",
+    content: "Finally, a Bible app that understands my questions and provides comfort when I need it most.",
+    rating: 5,
+  },
+]
 
-  const testimonials = [
-    {
-      name: "Sarah M.",
-      text: "BibleAF has transformed my daily devotions. The AI insights are incredibly meaningful.",
-      rating: 5,
-    },
-    {
-      name: "David L.",
-      text: "Finding relevant verses for my situations has never been easier. Amazing technology!",
-      rating: 5,
-    },
-    {
-      name: "Maria R.",
-      text: "The daily verses with AI commentary have deepened my understanding of Scripture.",
-      rating: 5,
-    },
-  ]
+export default function HomePage() {
+  const structuredData = StructuredDataService.generateWebsiteStructuredData()
 
   return (
     <>
       <SEOHead
-        title="BibleAF – AI-Powered Bible Study for Modern Believers"
-        description="Experience the Bible like never before with AI-powered insights, daily verses, and life guidance. Join thousands of believers discovering deeper meaning in Scripture."
-        canonical="/"
+        title="BibleAF - AI-Powered Bible Study & Spiritual Guidance"
+        description="Experience Scripture like never before with AI-powered insights, daily devotionals, spiritual guidance, and pastoral support. Join thousands discovering deeper faith."
+        structuredData={structuredData}
       />
 
-      <main className="flex min-h-screen flex-col">
-        {/* Header with Theme Toggle */}
-        <header className="relative z-10 p-4">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-2xl">
-              <span className="text-amber-600">Bible</span>
-              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-1 rounded-lg shadow-lg">
-                AF
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              {/* Theme Toggle - Available to all users */}
-              {mounted && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                  aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-              )}
-
-              <Link href="/auth/login">
-                <Button
-                  variant="outline"
-                  className="border-amber-600 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
-                >
-                  Login
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </header>
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950">
+        <MainNavigation />
 
         {/* Hero Section */}
-        <section className="relative flex min-h-screen items-center justify-center p-4 text-center overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950 dark:via-yellow-950 dark:to-orange-950" />
+        <section className="relative py-20 lg:py-32 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-orange-600/10 dark:from-amber-400/5 dark:to-orange-400/5" />
+          <div className="container relative z-10 mx-auto px-4 text-center">
+            <div className="max-w-4xl mx-auto">
+              <Badge className="mb-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-2 text-sm font-medium">
+                <Sparkles className="h-4 w-4 mr-2" />
+                AI-Powered Bible Study
+              </Badge>
 
-          <div className="relative z-10 divine-light-card rounded-2xl p-8 shadow-2xl max-w-4xl w-full">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div className="text-left">
-                <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-500">
-                  BibleAF
-                </h1>
-                <p className="text-xl md:text-2xl mb-8 text-gray-700 dark:text-gray-300">
-                  Experience the Bible like never before with AI-powered insights, daily verses, and life guidance.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 bg-clip-text text-transparent leading-tight">
+                Experience Scripture
+                <br />
+                <span className="text-3xl md:text-5xl lg:text-6xl">Like Never Before</span>
+              </h1>
+
+              <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+                Discover deeper meaning in God's Word with AI-powered insights, personalized devotionals, and
+                compassionate spiritual guidance for your faith journey.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+                <Button asChild size="lg" className="text-lg px-8 py-6 divine-button">
                   <Link href="/dashboard">
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white font-semibold px-8 py-3"
-                    >
-                      Get Started Free
-                    </Button>
+                    <Search className="h-5 w-5 mr-2" />
+                    Start Exploring Scripture
                   </Link>
-                  <Link href="/auth/login">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-amber-600 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 px-8 py-3"
-                    >
-                      Login
-                    </Button>
-                  </Link>
+                </Button>
+
+                <Button variant="outline" size="lg" className="text-lg px-8 py-6">
+                  <Play className="h-5 w-5 mr-2" />
+                  Watch Demo
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Shield className="h-4 w-4 text-green-500" />
+                  Theologically Sound
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  10,000+ Users
+                </div>
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-yellow-500" />
+                  4.9/5 Rating
                 </div>
               </div>
-
-              <div className="relative">
-                <Image
-                  src="/images/ai-bible-robot.png"
-                  alt="AI-powered Bible study with robot reading Holy Bible"
-                  width={400}
-                  height={500}
-                  className="rounded-lg shadow-lg"
-                  priority
-                  sizes="(max-width: 768px) 100vw, 400px"
-                />
-              </div>
             </div>
           </div>
         </section>
 
-        {/* Interactive Demo Section */}
-        <section className="relative py-20 px-4 overflow-hidden">
-          {/* Background Image */}
-          <div className="absolute inset-0">
-            <Image
-              src="/images/divine-sunset-mountains.png"
-              alt="Divine sunset over mountains background"
-              fill
-              className="object-cover"
-              loading="lazy"
-              sizes="100vw"
-            />
-          </div>
-
-          {/* Overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/40" />
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-900/30 via-transparent to-amber-900/30" />
-
-          {/* Content */}
-          <div className="relative z-10">
-            <InteractiveDemo />
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-20 px-4 bg-white dark:bg-gray-900">
-          <div className="max-w-6xl mx-auto">
+        {/* Main Features */}
+        <section className="py-20 bg-white/50 dark:bg-gray-900/50">
+          <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-                Powerful Features for Modern Bible Study
-              </h2>
-              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-                Combine the timeless wisdom of Scripture with cutting-edge AI technology for a deeper spiritual
-                experience.
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Powerful Tools for Spiritual Growth</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Everything you need to deepen your relationship with God and understand His Word
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {features.map((feature, index) => (
-                <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex justify-center mb-4">{feature.icon}</div>
-                    <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">{feature.title}</h3>
-                    <p className="text-gray-600 dark:text-gray-400">{feature.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {mainFeatures.map((feature, index) => {
+                const Icon = feature.icon
+                return (
+                  <Card
+                    key={index}
+                    className="divine-light-card group hover:scale-105 transition-all duration-300 cursor-pointer"
+                  >
+                    <CardHeader className="text-center pb-4">
+                      <div
+                        className={`mx-auto w-16 h-16 rounded-full bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4`}
+                      >
+                        <Icon className="h-8 w-8 text-white" />
+                      </div>
+                      <Badge variant="secondary" className="mb-2 w-fit mx-auto">
+                        {feature.badge}
+                      </Badge>
+                      <CardTitle className="text-xl font-semibold">{feature.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-muted-foreground mb-4 leading-relaxed">{feature.description}</p>
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                      >
+                        <Link href={feature.href}>
+                          Explore <ArrowRight className="h-4 w-4 ml-2" />
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           </div>
         </section>
 
-        {/* Traditional Meets Modern Section */}
-        <section className="py-20 px-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <Image
-                  src="/images/hand-bible-pages.png"
-                  alt="Hand turning pages of Holy Bible in warm lighting"
-                  width={500}
-                  height={600}
-                  className="rounded-lg shadow-lg"
-                  loading="lazy"
-                  sizes="(max-width: 768px) 100vw, 500px"
-                />
-              </div>
-
-              <div>
-                <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">
-                  Where Tradition Meets Innovation
-                </h2>
-                <p className="text-lg text-gray-700 dark:text-gray-300 mb-6">
-                  We honor the sacred tradition of Bible study while embracing modern technology to make Scripture more
-                  accessible and meaningful than ever before.
-                </p>
-                <ul className="space-y-4 text-gray-700 dark:text-gray-300">
-                  <li className="flex items-center">
-                    <Users className="h-5 w-5 text-amber-600 mr-3" />
-                    Join thousands of believers worldwide
-                  </li>
-                  <li className="flex items-center">
-                    <Book className="h-5 w-5 text-amber-600 mr-3" />
-                    Access the complete Bible with AI insights
-                  </li>
-                  <li className="flex items-center">
-                    <Heart className="h-5 w-5 text-amber-600 mr-3" />
-                    Personalized spiritual guidance
-                  </li>
-                  <li className="flex items-center">
-                    <Zap className="h-5 w-5 text-amber-600 mr-3" />
-                    Instant answers to your spiritual questions
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials Section */}
-        <section className="py-20 px-4 bg-white dark:bg-gray-900">
-          <div className="max-w-6xl mx-auto">
+        {/* Testimonials */}
+        <section className="py-20">
+          <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">What Our Users Say</h2>
-              <p className="text-xl text-gray-600 dark:text-gray-400">
-                Discover how BibleAF is transforming spiritual journeys worldwide
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by Faith Communities</h2>
+              <p className="text-xl text-muted-foreground">
+                See how BibleAF is transforming Bible study and spiritual growth
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {testimonials.map((testimonial, index) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
+                <Card key={index} className="divine-light-card">
                   <CardContent className="p-6">
-                    <div className="flex mb-4" aria-label={`${testimonial.rating} out of 5 stars`}>
+                    <div className="flex items-center gap-1 mb-4">
                       {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-5 w-5 text-yellow-500 fill-current" />
+                        <Star key={i} className="h-4 w-4 fill-yellow-500 text-yellow-500" />
                       ))}
                     </div>
-                    <p className="text-gray-700 dark:text-gray-300 mb-4 italic">"{testimonial.text}"</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">- {testimonial.name}</p>
+                    <p className="text-muted-foreground italic mb-4 leading-relaxed">"{testimonial.content}"</p>
+                    <div>
+                      <p className="font-semibold">{testimonial.name}</p>
+                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -285,112 +251,112 @@ export default function Home() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 px-4 bg-gradient-to-r from-amber-600 to-yellow-500">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl font-bold mb-6 text-white">Ready to Transform Your Bible Study?</h2>
-            <p className="text-xl text-amber-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of believers who are discovering deeper meaning in Scripture with AI-powered insights.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/dashboard">
-                <Button size="lg" className="bg-white text-amber-600 hover:bg-amber-50 font-semibold px-8 py-3">
-                  Start Your Journey
+        <section className="py-20 bg-gradient-to-r from-amber-500 to-orange-500">
+          <div className="container mx-auto px-4 text-center">
+            <div className="max-w-3xl mx-auto text-white">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Begin Your Spiritual Journey Today</h2>
+              <p className="text-xl mb-8 opacity-90">
+                Join thousands who are discovering deeper meaning in Scripture with AI-powered insights and pastoral
+                guidance.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6">
+                  <Link href="/auth/signup">
+                    Get Started Free
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </Link>
                 </Button>
-              </Link>
-              <Link href="/pricing">
                 <Button
+                  asChild
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-amber-600 px-8 py-3"
+                  className="text-lg px-8 py-6 bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
-                  View Pricing
+                  <Link href="/pricing">View Pricing</Link>
                 </Button>
-              </Link>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Footer */}
-        <footer className="py-12 px-4 bg-gray-900 text-white">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid md:grid-cols-4 gap-8 mb-8">
-              <div>
-                <h3 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-400">
-                  BibleAF
-                </h3>
-                <p className="text-gray-400 mb-4">AI-powered Bible study for the modern believer</p>
+        <footer className="bg-gray-900 text-white py-12">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="col-span-1 md:col-span-2">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="font-bold text-2xl">Bible</span>
+                  <span className="bg-primary text-primary-foreground px-3 py-1 rounded-lg text-2xl">AF</span>
+                </div>
+                <p className="text-gray-300 mb-4 max-w-md">
+                  AI-powered Bible study for deeper spiritual understanding and growth. Experience Scripture with
+                  intelligent insights and pastoral care.
+                </p>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Shield className="h-4 w-4" />
+                  Theologically reviewed and pastorally guided
+                </div>
               </div>
 
               <div>
-                <h4 className="font-semibold mb-4">Features</h4>
-                <ul className="space-y-2 text-gray-400">
+                <h3 className="font-semibold mb-4">Features</h3>
+                <ul className="space-y-2 text-gray-300">
                   <li>
-                    <Link href="/dashboard" className="hover:text-amber-400 transition-colors">
-                      AI Search
+                    <Link href="/dashboard" className="hover:text-white transition-colors">
+                      Bible Search
                     </Link>
                   </li>
                   <li>
-                    <Link href="/dashboard" className="hover:text-amber-400 transition-colors">
-                      Daily Verses
+                    <Link href="/daily-verse" className="hover:text-white transition-colors">
+                      Daily Verse
                     </Link>
                   </li>
                   <li>
-                    <Link href="/dashboard" className="hover:text-amber-400 transition-colors">
+                    <Link href="/guidance" className="hover:text-white transition-colors">
                       Life Guidance
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/heart-to-heart" className="hover:text-white transition-colors">
+                      Heart to Heart
                     </Link>
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold mb-4">Company</h4>
-                <ul className="space-y-2 text-gray-400">
+                <h3 className="font-semibold mb-4">Support</h3>
+                <ul className="space-y-2 text-gray-300">
                   <li>
-                    <Link href="/about" className="hover:text-amber-400 transition-colors">
+                    <Link href="/about" className="hover:text-white transition-colors">
                       About Us
                     </Link>
                   </li>
                   <li>
-                    <Link href="/contact" className="hover:text-amber-400 transition-colors">
+                    <Link href="/contact" className="hover:text-white transition-colors">
                       Contact
                     </Link>
                   </li>
                   <li>
-                    <Link href="/pricing" className="hover:text-amber-400 transition-colors">
+                    <Link href="/pricing" className="hover:text-white transition-colors">
                       Pricing
                     </Link>
                   </li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-4">Account</h4>
-                <ul className="space-y-2 text-gray-400">
                   <li>
-                    <Link href="/auth/login" className="hover:text-amber-400 transition-colors">
-                      Login
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/auth/signup" className="hover:text-amber-400 transition-colors">
-                      Sign Up
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/dashboard" className="hover:text-amber-400 transition-colors">
-                      Dashboard
+                    <Link href="/privacy" className="hover:text-white transition-colors">
+                      Privacy Policy
                     </Link>
                   </li>
                 </ul>
               </div>
             </div>
 
-            <div className="border-t border-gray-800 pt-8 text-center text-gray-500">
-              <p>&copy; 2024 BibleAF. All rights reserved. Built with ❤️ for the body of Christ.</p>
+            <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+              <p>&copy; 2024 BibleAF. Sharing God's Word with AI-powered insights.</p>
             </div>
           </div>
         </footer>
-      </main>
+      </div>
     </>
   )
 }

@@ -1,42 +1,64 @@
-// Server-side environment variables with proper validation
+/**
+ * Server-only environment variables
+ * This file should only be imported in server-side code
+ */
+
+// Validate we're on the server
+if (typeof window !== "undefined") {
+  throw new Error("env-server.ts should only be imported on the server side")
+}
+
+// Server environment variables with validation
 export const serverEnv = {
-  // Stripe Configuration
+  // Database
+  DATABASE_URL: process.env.DATABASE_URL || "",
+
+  // AI Services
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
+  DEEPINFRA_API_KEY: process.env.DEEPINFRA_API_KEY || "",
+
+  // Payment
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
 
-  // AI Configuration
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
-  DEEPINFRA_API_KEY: process.env.DEEPINFRA_API_KEY || "",
-  ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || "",
-
-  // Storage Configuration
+  // Storage
   BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN || "",
 
-  // Other Configuration
+  // TTS
+  ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || "",
+
+  // App
   NODE_ENV: process.env.NODE_ENV || "development",
-  ANALYZE: process.env.ANALYZE || "",
-  BUNDLE_ANALYZE: process.env.BUNDLE_ANALYZE || "",
-  NPM_RC: process.env.NPM_RC || "",
-  NPM_TOKEN: process.env.NPM_TOKEN || "",
 }
 
-// Debug function to log environment status
+// Validation function
+export function validateServerEnv() {
+  const required = ["OPENAI_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "BLOB_READ_WRITE_TOKEN"]
+
+  const missing = required.filter((key) => !serverEnv[key as keyof typeof serverEnv])
+
+  if (missing.length > 0) {
+    console.warn(`Missing server environment variables: ${missing.join(", ")}`)
+    return false
+  }
+
+  return true
+}
+
+// Debug function for server environment variables
 export function debugServerEnv() {
-  console.log("=== Server Environment Debug ===")
-  console.log("STRIPE_SECRET_KEY exists:", !!serverEnv.STRIPE_SECRET_KEY)
-  console.log("STRIPE_SECRET_KEY length:", serverEnv.STRIPE_SECRET_KEY.length)
-  console.log("STRIPE_SECRET_KEY starts with sk_:", serverEnv.STRIPE_SECRET_KEY.startsWith("sk_"))
-  console.log("STRIPE_WEBHOOK_SECRET exists:", !!serverEnv.STRIPE_WEBHOOK_SECRET)
-  console.log("DEEPINFRA_API_KEY exists:", !!serverEnv.DEEPINFRA_API_KEY)
-  console.log("BLOB_READ_WRITE_TOKEN exists:", !!serverEnv.BLOB_READ_WRITE_TOKEN)
-  console.log(
-    "All process.env STRIPE vars:",
-    Object.keys(process.env).filter((key) => key.includes("STRIPE")),
-  )
-  console.log("================================")
-}
+  if (serverEnv.NODE_ENV === "development") {
+    const status = {}
+    for (const key in serverEnv) {
+      status[key] = serverEnv[key as keyof typeof serverEnv] ? "defined" : "missing"
+    }
 
-// Validate server environment on import
-if (typeof window === "undefined") {
-  debugServerEnv()
+    return {
+      nodeEnv: serverEnv.NODE_ENV,
+      status,
+      timestamp: new Date().toISOString(),
+    }
+  }
+
+  return { message: "Debug information only available in development mode" }
 }

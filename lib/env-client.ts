@@ -7,6 +7,9 @@ export const clientEnv = {
 
   // App Configuration
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+
+  // API URL
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
 }
 
 // Validation function for client environment
@@ -15,6 +18,7 @@ export function validateClientEnv() {
 
   if (!clientEnv.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) missing.push("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY")
   if (!clientEnv.NEXT_PUBLIC_APP_URL) missing.push("NEXT_PUBLIC_APP_URL")
+  if (!clientEnv.NEXT_PUBLIC_API_URL) missing.push("NEXT_PUBLIC_API_URL")
 
   if (missing.length > 0) {
     console.warn(`Missing client environment variables: ${missing.join(", ")}`)
@@ -35,6 +39,10 @@ export const getAppUrl = () => {
   }
   // Server side
   return clientEnv.NEXT_PUBLIC_APP_URL
+}
+
+export const getApiUrl = () => {
+  return clientEnv.NEXT_PUBLIC_API_URL
 }
 
 export const isDevelopment = () => {
