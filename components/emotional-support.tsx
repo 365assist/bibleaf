@@ -55,13 +55,12 @@ export function EmotionalSupport({ emotion, situation, className }: EmotionalSup
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Crisis Alert */}
       {isCrisisDetected && (
         <Alert className="border-red-200 bg-red-50 dark:bg-red-950/20">
           <Phone className="h-4 w-4" />
           <AlertDescription className="space-y-2">
             <p className="font-medium">
-              If you're in crisis or having thoughts of self-harm, please reach out for immediate help:
+              If you are in crisis or having thoughts of self-harm, please reach out for immediate help:
             </p>
             <div className="space-y-1 text-sm">
               <p>
@@ -79,7 +78,6 @@ export function EmotionalSupport({ emotion, situation, className }: EmotionalSup
         </Alert>
       )}
 
-      {/* Comfort Messages */}
       <Card className="divine-light-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -89,7 +87,6 @@ export function EmotionalSupport({ emotion, situation, className }: EmotionalSup
           <p className="text-sm text-muted-foreground">God sees your heart and meets you in your need</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Category Selector */}
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => {
               const Icon = category.icon
@@ -110,17 +107,15 @@ export function EmotionalSupport({ emotion, situation, className }: EmotionalSup
 
           <Separator />
 
-          {/* Comfort Messages */}
           <div className="space-y-4">
             {filteredMessages.map((message, index) => (
               <div key={index} className="comfort-message">
                 <p className="text-sm leading-relaxed">{message.text}</p>
-                {message.reference && <p className="text-xs text-primary font-medium mt-2">- {message.reference}</p>}
+                {message.reference && <p className="text-xs text-primary font-medium mt-2">— {message.reference}</p>}
               </div>
             ))}
           </div>
 
-          {/* Show Resources Button */}
           <div className="pt-4 border-t">
             <Button variant="outline" onClick={() => setShowResources(!showResources)} className="w-full">
               <Users className="h-4 w-4 mr-2" />
@@ -130,7 +125,6 @@ export function EmotionalSupport({ emotion, situation, className }: EmotionalSup
         </CardContent>
       </Card>
 
-      {/* Support Resources */}
       {showResources && (
         <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
           <CardHeader>
@@ -224,7 +218,6 @@ function detectCrisis(emotion?: string, situation?: string): boolean {
 function getComfortMessages(emotion?: string, situation?: string): ComfortMessage[] {
   const messages: ComfortMessage[] = []
 
-  // Immediate comfort messages
   messages.push(
     {
       text: "You are seen, you are known, and you are deeply loved by God. Your pain matters to Him, and He is with you in this moment.",
@@ -242,7 +235,6 @@ function getComfortMessages(emotion?: string, situation?: string): ComfortMessag
     },
   )
 
-  // Hope messages
   messages.push(
     {
       text: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, to give you hope and a future.",
@@ -260,7 +252,6 @@ function getComfortMessages(emotion?: string, situation?: string): ComfortMessag
     },
   )
 
-  // Strength messages
   messages.push(
     {
       text: "I can do all this through him who gives me strength.",
@@ -278,7 +269,6 @@ function getComfortMessages(emotion?: string, situation?: string): ComfortMessag
     },
   )
 
-  // Peace messages
   messages.push(
     {
       text: "Peace I leave with you; my peace I give you. I do not give to you as the world gives. Do not let your hearts be troubled and do not be afraid.",
@@ -302,7 +292,6 @@ function getComfortMessages(emotion?: string, situation?: string): ComfortMessag
 function getSupportResources(emotion?: string, situation?: string): SupportResource[] {
   const resources: SupportResource[] = []
 
-  // Crisis resources
   resources.push(
     {
       title: "National Suicide Prevention Lifeline",
@@ -322,7 +311,6 @@ function getSupportResources(emotion?: string, situation?: string): SupportResou
     },
   )
 
-  // Counseling resources
   resources.push(
     {
       title: "Psychology Today Therapist Directory",
@@ -338,7 +326,6 @@ function getSupportResources(emotion?: string, situation?: string): SupportResou
     },
   )
 
-  // Community resources
   resources.push(
     {
       title: "Local Church Support Groups",
@@ -353,7 +340,6 @@ function getSupportResources(emotion?: string, situation?: string): SupportResou
     },
   )
 
-  // Scripture resources
   resources.push(
     {
       title: "Bible Verses for Comfort",

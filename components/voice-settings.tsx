@@ -1,153 +1,168 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { Settings, Volume2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { Settings, Volume2 } from "lucide-react"
-import { VoiceSelector } from "./voice-selector"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 export interface VoiceSettings {
   voiceId: string
   stability: number
   similarityBoost: number
+  speed?: number
+  pitch?: number
 }
 
 interface VoiceSettingsProps {
-  onSettingsChange?: (settings: VoiceSettings) => void
-  className?: string
+  onSettingsChange: (settings: VoiceSettings) => void
+  initialSettings?: Partial<VoiceSettings>
 }
 
-const DEFAULT_SETTINGS: VoiceSettings = {
-  voiceId: "ErXwobaYiN019PkySvjV", // Default voice ID
-  stability: 0.5,
-  similarityBoost: 0.75,
-}
+const VOICE_OPTIONS = [
+  { id: "ErXwobaYiN019PkySvjV", name: "Zach Bryan Style", description: "Warm, conversational" },
+  { id: "pNInz6obpgDQGcFmaJgB", name: "Adam", description: "Clear, professional" },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella", description: "Gentle, soothing" },
+  { id: "VR6AewLTigWG4xSOukaG", name: "Arnold", description: "Strong, authoritative" },
+]
 
-export function VoiceSettings({ onSettingsChange, className }: VoiceSettingsProps) {
-  const [settings, setSettings] = useState<VoiceSettings>(DEFAULT_SETTINGS)
-  const [isOpen, setIsOpen] = useState(false)
-  const [isInitialized, setIsInitialized] = useState(false)
+export function VoiceSettings({ onSettingsChange, initialSettings }: VoiceSettingsProps) {
+  const [settings, setSettings] = useState<VoiceSettings>({
+    voiceId: "ErXwobaYiN019PkySvjV",
+    stability: 0.5,
+    similarityBoost: 0.75,
+    speed: 1.0,
+    pitch: 1.0,
+    ...initialSettings,
+  })
 
-  // Load settings from localStorage on mount (client-side only)
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("voice-settings")
-        if (saved) {
-          const parsedSettings = JSON.parse(saved)
-          setSettings(parsedSettings)
-        }
-      } catch (error) {
-        console.warn("Failed to load voice settings:", error)
-      }
-      setIsInitialized(true)
-    }
-  }, [])
-
-  // Save settings and notify parent (only after initialization)
-  useEffect(() => {
-    if (isInitialized && typeof window !== "undefined") {
-      try {
-        localStorage.setItem("voice-settings", JSON.stringify(settings))
-        onSettingsChange?.(settings)
-      } catch (error) {
-        console.warn("Failed to save voice settings:", error)
-      }
-    }
-  }, [settings, isInitialized, onSettingsChange])
-
-  const handleVoiceChange = useCallback((voiceId: string) => {
-    setSettings((prev) => ({ ...prev, voiceId }))
-  }, [])
-
-  const handleStabilityChange = useCallback((value: number[]) => {
-    setSettings((prev) => ({ ...prev, stability: value[0] }))
-  }, [])
-
-  const handleSimilarityBoostChange = useCallback((value: number[]) => {
-    setSettings((prev) => ({ ...prev, similarityBoost: value[0] }))
-  }, [])
-
-  const testVoice = useCallback(async () => {
-    try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: "This is a test of your selected voice settings.",
-          voiceId: settings.voiceId,
-          stability: settings.stability,
-          similarityBoost: settings.similarityBoost,
-        }),
-      })
-
-      if (response.ok) {
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
-        const audio = new Audio(audioUrl)
-        audio.play()
-      }
-    } catch (error) {
-      console.error("Failed to test voice:", error)
-    }
-  }, [settings])
-
-  if (!isInitialized) {
-    return null // Don't render until initialized
+  const updateSettings = (newSettings: Partial<VoiceSettings>) => {
+    const updated = { ...settings, ...newSettings }
+    setSettings(updated)
+    onSettingsChange(updated)
   }
 
   return (
-    <div className={className}>
-      <Button variant="outline" size="sm" onClick={() => setIsOpen(!isOpen)} className="gap-2">
-        <Settings className="h-4 w-4" />
-        Voice Settings
-      </Button>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2">
+          <Settings className="h-4 w-4" />
+          Voice Settings
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80" align="end">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <h4 className="font-medium leading-none">Voice Settings</h4>
+            <p className="text-sm text-muted-foreground">Customize the voice output for your preferences</p>
+          </div>
 
-      {isOpen && (
-        <Card className="mt-2 w-80">
-          <CardHeader>
-            <CardTitle className="text-lg">Voice Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <VoiceSelector selectedVoiceId={settings.voiceId} onVoiceSelect={handleVoiceChange} />
-
+          <div className="space-y-4">
+            {/* Voice Selection */}
             <div className="space-y-2">
-              <Label>Stability: {settings.stability.toFixed(2)}</Label>
+              <Label htmlFor="voice-select">Voice</Label>
+              <Select value={settings.voiceId} onValueChange={(value) => updateSettings({ voiceId: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VOICE_OPTIONS.map((voice) => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{voice.name}</span>
+                        <span className="text-xs text-muted-foreground">{voice.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Stability */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="stability">Stability</Label>
+                <span className="text-sm text-muted-foreground">{settings.stability.toFixed(2)}</span>
+              </div>
               <Slider
-                value={[settings.stability]}
-                onValueChange={handleStabilityChange}
+                id="stability"
                 min={0}
                 max={1}
                 step={0.01}
+                value={[settings.stability]}
+                onValueChange={([value]) => updateSettings({ stability: value })}
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Higher values make the voice more stable but less expressive
+                Higher values make the voice more consistent but less expressive
               </p>
             </div>
 
+            {/* Similarity Boost */}
             <div className="space-y-2">
-              <Label>Similarity Boost: {settings.similarityBoost.toFixed(2)}</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="similarity">Similarity Boost</Label>
+                <span className="text-sm text-muted-foreground">{settings.similarityBoost.toFixed(2)}</span>
+              </div>
               <Slider
-                value={[settings.similarityBoost]}
-                onValueChange={handleSimilarityBoostChange}
+                id="similarity"
                 min={0}
                 max={1}
                 step={0.01}
+                value={[settings.similarityBoost]}
+                onValueChange={([value]) => updateSettings({ similarityBoost: value })}
                 className="w-full"
               />
-              <p className="text-xs text-muted-foreground">Higher values make the voice more similar to the original</p>
+              <p className="text-xs text-muted-foreground">
+                Higher values make the voice more similar to the original speaker
+              </p>
             </div>
 
-            <Button onClick={testVoice} className="w-full gap-2">
-              <Volume2 className="h-4 w-4" />
-              Test Voice
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+            {/* Speed */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="speed">Speed</Label>
+                <span className="text-sm text-muted-foreground">{settings.speed?.toFixed(1)}x</span>
+              </div>
+              <Slider
+                id="speed"
+                min={0.5}
+                max={2.0}
+                step={0.1}
+                value={[settings.speed || 1.0]}
+                onValueChange={([value]) => updateSettings({ speed: value })}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">Adjust playback speed</p>
+            </div>
+
+            {/* Pitch */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="pitch">Pitch</Label>
+                <span className="text-sm text-muted-foreground">{settings.pitch?.toFixed(1)}x</span>
+              </div>
+              <Slider
+                id="pitch"
+                min={0.5}
+                max={2.0}
+                step={0.1}
+                value={[settings.pitch || 1.0]}
+                onValueChange={([value]) => updateSettings({ pitch: value })}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">Adjust voice pitch</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <Volume2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Changes apply to new audio generation</span>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }

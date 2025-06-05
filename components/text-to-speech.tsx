@@ -9,15 +9,22 @@ interface TextToSpeechProps {
   className?: string
   showVoiceSettings?: boolean
   reference?: string
+  contentType?: string
 }
 
-export function TextToSpeech({ text, className = "", showVoiceSettings = true, reference }: TextToSpeechProps) {
+export function TextToSpeech({
+  text,
+  className = "",
+  showVoiceSettings = true,
+  reference,
+  contentType = "verse",
+}: TextToSpeechProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isMuted, setIsMuted] = useState(false)
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettingsType>({
-    voiceId: "ErXwobaYiN019PkySvjV", // Adam - a valid ElevenLabs voice
+    voiceId: "ErXwobaYiN019PkySvjV",
     stability: 0.5,
     similarityBoost: 0.75,
   })
@@ -26,7 +33,6 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
   const [cacheStatus, setCacheStatus] = useState<string | null>(null)
   const currentAudioUrl = useRef<string | null>(null)
 
-  // Cleanup function to properly dispose of audio resources
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause()
@@ -56,7 +62,6 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
     [cleanupAudio],
   )
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       cleanupAudio()
@@ -64,33 +69,26 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
   }, [cleanupAudio])
 
   const handlePlay = async () => {
-    // If we have audio and it's valid, toggle playback
     if (audioRef.current && currentAudioUrl.current) {
       try {
         if (isPlaying) {
           audioRef.current.pause()
           setIsPlaying(false)
         } else {
-          // Check if the audio source is still valid
           if (audioRef.current.readyState >= 2) {
-            // HAVE_CURRENT_DATA or higher
             await audioRef.current.play()
             setIsPlaying(true)
           } else {
-            // Audio source is invalid, regenerate
             cleanupAudio()
-            // Fall through to regenerate audio
           }
         }
         return
       } catch (err) {
         console.error("Error playing existing audio:", err)
         cleanupAudio()
-        // Fall through to regenerate audio
       }
     }
 
-    // Generate new audio
     setIsLoading(true)
     setError(null)
     setCacheStatus(null)
@@ -112,44 +110,36 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to generate speech`)
       }
 
-      // Verify we got audio data
       const contentType = response.headers.get("content-type")
       if (!contentType || !contentType.includes("audio")) {
         throw new Error("Invalid response: Expected audio data")
       }
 
-      // Get the audio blob
       const audioBlob = await response.blob()
 
-      // Verify the blob has content
       if (audioBlob.size === 0) {
         throw new Error("Received empty audio data")
       }
 
-      // Create audio URL
       const audioUrl = URL.createObjectURL(audioBlob)
       currentAudioUrl.current = audioUrl
 
-      // Create new audio element
       const audio = new Audio()
 
-      // Set up event listeners before setting src
       audio.addEventListener("ended", handleAudioEnded)
       audio.addEventListener("error", handleAudioError)
       audio.addEventListener("loadeddata", () => {
         console.log("Audio loaded successfully")
       })
 
-      // Set audio properties
       audio.src = audioUrl
       audio.muted = isMuted
       audio.preload = "auto"
 
-      // Wait for audio to be ready
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error("Audio loading timeout"))
-        }, 10000) // 10 second timeout
+        }, 10000)
 
         audio.addEventListener(
           "canplay",
@@ -169,11 +159,9 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
           { once: true },
         )
 
-        // Start loading
         audio.load()
       })
 
-      // Store reference and play
       audioRef.current = audio
       await audio.play()
       setIsPlaying(true)
@@ -198,7 +186,6 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
     (newSettings: VoiceSettingsType) => {
       setVoiceSettings(newSettings)
 
-      // Update voice name when voice changes
       if (newSettings.voiceId === "pNInz6obpgDQGcFmaJgB") {
         setVoiceName("Adam")
       } else if (newSettings.voiceId === "EXAVITQu4vr4xnSDxMaL") {
@@ -209,7 +196,6 @@ export function TextToSpeech({ text, className = "", showVoiceSettings = true, r
         setVoiceName("Custom Voice")
       }
 
-      // Clear current audio when voice settings change
       cleanupAudio()
       setError(null)
     },
