@@ -17,31 +17,34 @@ const nextConfig = {
         hostname: "**",
       },
     ],
-    // Enhanced image optimization
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60,
     unoptimized: true,
   },
-  // Improved webpack configuration
+  // Simplified webpack configuration without crypto polyfills
   webpack: (config, { isServer }) => {
     if (!isServer) {
+      // Disable Node.js polyfills for client-side
       config.resolve.fallback = {
-        ...config.resolve.fallback,
         fs: false,
         net: false,
         tls: false,
-        crypto: require.resolve("crypto-browserify"),
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
       }
     }
     return config
   },
-  // Enable strict mode for better development experience
   reactStrictMode: true,
-  // Improved compression for faster page loads
   compress: true,
-  // Disable X-Powered-By header for security
   poweredByHeader: false,
-  // Improved SWC minification
   swcMinify: true,
 }
 
