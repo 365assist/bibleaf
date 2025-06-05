@@ -34,8 +34,8 @@ export default function UsageLimits({ userId, subscriptionTier = "free" }: Usage
       case "free":
       default:
         return {
-          searches: 5, // Strict 5 searches per day for free tier
-          guidance: 5, // 5 guidance requests per day for free tier
+          searches: 5,
+          guidance: 5,
         }
     }
   })()
@@ -102,8 +102,10 @@ export default function UsageLimits({ userId, subscriptionTier = "free" }: Usage
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary"
-                style={{ width: `${calculatePercentage(usage.searches, usage.searchLimit)}%` }}
-              ></div>
+                style={{
+                  width: `${calculatePercentage(usage.searches, usage.searchLimit)}%`,
+                }}
+              />
             </div>
           </div>
 
@@ -115,8 +117,10 @@ export default function UsageLimits({ userId, subscriptionTier = "free" }: Usage
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary"
-                style={{ width: `${calculatePercentage(usage.guidance, usage.guidanceLimit)}%` }}
-              ></div>
+                style={{
+                  width: `${calculatePercentage(usage.guidance, usage.guidanceLimit)}%`,
+                }}
+              />
             </div>
           </div>
 
