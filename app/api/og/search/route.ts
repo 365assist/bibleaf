@@ -6,7 +6,8 @@ export const runtime = "edge"
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const query = searchParams.get("q") || "Bible Search"
+    const query = searchParams.get("query") || "Search the Bible"
+    const results = searchParams.get("results") || "0"
 
     return new ImageResponse(
       <div
@@ -17,10 +18,11 @@ export async function GET(request: NextRequest) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#1e40af",
-          backgroundImage: "linear-gradient(45deg, #1e40af 0%, #3b82f6 100%)",
+          backgroundColor: "#7c3aed",
+          backgroundImage: "linear-gradient(45deg, #7c3aed 0%, #a855f7 100%)",
           fontSize: 32,
           fontWeight: 600,
+          color: "white",
         }}
       >
         <div
@@ -31,45 +33,40 @@ export async function GET(request: NextRequest) {
             justifyContent: "center",
             backgroundColor: "white",
             borderRadius: 20,
-            padding: 40,
+            padding: 60,
             margin: 40,
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             maxWidth: "80%",
             textAlign: "center",
+            color: "#1f2937",
           }}
         >
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
+              fontSize: 48,
               marginBottom: 20,
             }}
           >
-            <div
-              style={{
-                fontSize: 48,
-                marginRight: 20,
-              }}
-            >
-              🔍
-            </div>
-            <div
-              style={{
-                fontSize: 36,
-                fontWeight: "bold",
-                color: "#1f2937",
-              }}
-            >
-              BibleAF Search
-            </div>
+            🔍
+          </div>
+
+          <div
+            style={{
+              fontSize: 36,
+              fontWeight: "bold",
+              marginBottom: 20,
+              color: "#7c3aed",
+            }}
+          >
+            Bible Search
           </div>
 
           <div
             style={{
               fontSize: 24,
+              marginBottom: 20,
+              fontStyle: "italic",
               color: "#374151",
-              marginBottom: 10,
-              fontWeight: "bold",
             }}
           >
             "{query}"
@@ -77,12 +74,11 @@ export async function GET(request: NextRequest) {
 
           <div
             style={{
-              fontSize: 18,
+              fontSize: 20,
               color: "#6b7280",
-              textAlign: "center",
             }}
           >
-            AI-Powered Bible Verse Search Results
+            {results} results found • BibleAF
           </div>
         </div>
       </div>,

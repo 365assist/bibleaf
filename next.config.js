@@ -6,46 +6,44 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ["sharp"],
-  },
   images: {
-    domains: ["placeholder.svg"],
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "api.dicebear.com",
+      },
+      {
+        protocol: "https",
+        hostname: "blob.vercel-storage.com",
       },
     ],
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 60,
     unoptimized: true,
   },
-  // Simplified webpack configuration without crypto polyfills
+  serverExternalPackages: ["canvas"],
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "*.vercel.app"],
+    },
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Disable Node.js polyfills for client-side
       config.resolve.fallback = {
+        ...config.resolve.fallback,
         fs: false,
         net: false,
         tls: false,
         crypto: false,
-        stream: false,
-        url: false,
-        zlib: false,
-        http: false,
-        https: false,
-        assert: false,
-        os: false,
-        path: false,
       }
     }
     return config
   },
-  reactStrictMode: true,
-  compress: true,
-  poweredByHeader: false,
-  swcMinify: true,
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
 }
 
 module.exports = nextConfig

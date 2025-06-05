@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const topic = searchParams.get("topic") || "Faith"
-    const topicTitle = topic.charAt(0).toUpperCase() + topic.slice(1)
+    const description = searchParams.get("description") || "Explore biblical wisdom on this topic"
 
     return new ImageResponse(
       <div
@@ -18,10 +18,11 @@ export async function GET(request: NextRequest) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#7c3aed",
-          backgroundImage: "linear-gradient(45deg, #7c3aed 0%, #a855f7 100%)",
+          backgroundColor: "#dc2626",
+          backgroundImage: "linear-gradient(45deg, #dc2626 0%, #ef4444 100%)",
           fontSize: 32,
           fontWeight: 600,
+          color: "white",
         }}
       >
         <div
@@ -32,58 +33,54 @@ export async function GET(request: NextRequest) {
             justifyContent: "center",
             backgroundColor: "white",
             borderRadius: 20,
-            padding: 40,
+            padding: 60,
             margin: 40,
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             maxWidth: "80%",
             textAlign: "center",
+            color: "#1f2937",
           }}
         >
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
+              fontSize: 48,
               marginBottom: 20,
             }}
           >
-            <div
-              style={{
-                fontSize: 48,
-                marginRight: 20,
-              }}
-            >
-              ✨
-            </div>
-            <div
-              style={{
-                fontSize: 36,
-                fontWeight: "bold",
-                color: "#1f2937",
-              }}
-            >
-              BibleAF
-            </div>
+            ✨
           </div>
 
           <div
             style={{
-              fontSize: 28,
-              color: "#374151",
-              marginBottom: 10,
+              fontSize: 36,
               fontWeight: "bold",
+              marginBottom: 20,
+              color: "#dc2626",
+              textTransform: "capitalize",
             }}
           >
-            {topicTitle} in the Bible
+            {topic}
+          </div>
+
+          <div
+            style={{
+              fontSize: 20,
+              color: "#374151",
+              textAlign: "center",
+              lineHeight: 1.4,
+            }}
+          >
+            {description}
           </div>
 
           <div
             style={{
               fontSize: 18,
               color: "#6b7280",
-              textAlign: "center",
+              marginTop: 20,
             }}
           >
-            Biblical Verses & AI Insights
+            BibleAF - Biblical Topics & Insights
           </div>
         </div>
       </div>,

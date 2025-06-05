@@ -6,12 +6,9 @@ export const runtime = "edge"
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const book = searchParams.get("book") || "John"
-    const chapter = searchParams.get("chapter") || "3"
-    const verse = searchParams.get("verse")
-
-    const reference = verse ? `${book} ${chapter}:${verse}` : `${book} ${chapter}`
-    const title = `${reference} - Bible Study with AI`
+    const verse = searchParams.get("verse") || "John 3:16"
+    const text = searchParams.get("text") || "For God so loved the world..."
+    const translation = searchParams.get("translation") || "NIV"
 
     return new ImageResponse(
       <div
@@ -22,10 +19,12 @@ export async function GET(request: NextRequest) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#fef3c7",
-          backgroundImage: "linear-gradient(45deg, #fef3c7 0%, #fde68a 100%)",
+          backgroundColor: "#1e40af",
+          backgroundImage: "linear-gradient(45deg, #1e40af 0%, #3b82f6 100%)",
           fontSize: 32,
           fontWeight: 600,
+          color: "white",
+          padding: 40,
         }}
       >
         <div
@@ -34,64 +33,55 @@ export async function GET(request: NextRequest) {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "white",
+            backgroundColor: "rgba(255, 255, 255, 0.95)",
             borderRadius: 20,
-            padding: 40,
+            padding: 60,
             margin: 40,
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
-            maxWidth: "80%",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            maxWidth: "90%",
             textAlign: "center",
+            color: "#1f2937",
           }}
         >
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: 20,
+              fontSize: 48,
+              marginBottom: 30,
             }}
           >
-            <div
-              style={{
-                fontSize: 48,
-                fontWeight: "bold",
-                background: "linear-gradient(90deg, #d97706 0%, #f59e0b 100%)",
-                backgroundClip: "text",
-                color: "transparent",
-                marginRight: 20,
-              }}
-            >
-              📖
-            </div>
-            <div
-              style={{
-                fontSize: 36,
-                fontWeight: "bold",
-                color: "#1f2937",
-              }}
-            >
-              BibleAF
-            </div>
+            📖
           </div>
 
           <div
             style={{
               fontSize: 28,
-              color: "#374151",
-              marginBottom: 10,
-              fontWeight: "bold",
+              lineHeight: 1.4,
+              marginBottom: 30,
+              maxWidth: "800px",
+              fontStyle: "italic",
             }}
           >
-            {reference}
+            "{text}"
+          </div>
+
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: "bold",
+              color: "#1e40af",
+              marginBottom: 10,
+            }}
+          >
+            {verse}
           </div>
 
           <div
             style={{
               fontSize: 18,
               color: "#6b7280",
-              textAlign: "center",
             }}
           >
-            AI-Powered Bible Study & Insights
+            {translation} • BibleAF
           </div>
         </div>
       </div>,
