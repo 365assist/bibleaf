@@ -66,23 +66,48 @@ export default function EnhancedDashboard() {
 
   const loadDailyVerse = async () => {
     try {
-      const response = await fetch("/api/bible/daily-verse")
+      console.log("Loading daily verse...")
+      const response = await fetch("/api/bible/daily-verse?translation=niv")
+      console.log("Response status:", response.status)
+
       if (response.ok) {
         const data = await response.json()
-        if (data.success) {
-          setDailyVerse(data.verse)
+        console.log("Response data:", data)
+
+        if (data.success && data.verse) {
+          setDailyVerse({
+            book: data.verse.book,
+            chapter: data.verse.chapter,
+            verse: data.verse.verse,
+            text: data.verse.text,
+            translation: data.verse.translation,
+            bookName: data.verse.bookName || data.verse.book,
+          })
+          console.log("Daily verse set successfully")
+          return
         }
       }
-    } catch (error) {
-      console.error("Error loading daily verse:", error)
+
+      console.log("API failed, using fallback")
       // Fallback verse
       setDailyVerse({
-        book: "Psalm",
+        book: "psalms",
         chapter: 119,
         verse: 105,
         text: "Your word is a lamp for my feet, a light on my path.",
         translation: "NIV",
-        bookName: "Psalm",
+        bookName: "Psalms",
+      })
+    } catch (error) {
+      console.error("Error loading daily verse:", error)
+      // Fallback verse
+      setDailyVerse({
+        book: "psalms",
+        chapter: 119,
+        verse: 105,
+        text: "Your word is a lamp for my feet, a light on my path.",
+        translation: "NIV",
+        bookName: "Psalms",
       })
     }
   }
