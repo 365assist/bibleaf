@@ -27,7 +27,7 @@ const pricingPlans = [
   {
     id: "basic",
     name: "Basic",
-    price: 999, // $9.99 in cents
+    price: 1000, // $10.00 in cents
     interval: "month",
     popular: true,
     features: [
@@ -42,7 +42,7 @@ const pricingPlans = [
   {
     id: "premium",
     name: "Premium",
-    price: 1999, // $19.99 in cents
+    price: 2500, // $25.00 in cents
     interval: "month",
     popular: false,
     features: [
