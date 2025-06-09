@@ -1,6 +1,8 @@
 import ComprehensiveBibleSearch from "@/components/comprehensive-bible-search"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function DashboardPage() {
   return (
@@ -56,30 +58,39 @@ export default function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">📖 Daily Verse</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600">Get your personalized daily Bible verse with AI insights</p>
+              <p className="text-sm text-gray-600 mb-4">Get your personalized daily Bible verse with AI insights</p>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/test-comprehensive">Try Daily Verse</Link>
+              </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">🤖 AI Guidance</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600">Ask questions and receive biblical guidance powered by AI</p>
+              <p className="text-sm text-gray-600 mb-4">Ask questions and receive biblical guidance powered by AI</p>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/test-search-ui">AI Guidance</Link>
+              </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">🔊 Text-to-Speech</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600">Listen to Bible verses with high-quality voice synthesis</p>
+              <p className="text-sm text-gray-600 mb-4">Listen to Bible verses with high-quality voice synthesis</p>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/tts-enhanced-demo">Try TTS</Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
