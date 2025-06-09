@@ -59,8 +59,8 @@ export default function ContactPage() {
       icon: <Mail className="h-6 w-6 text-amber-600" />,
       title: "Email Us",
       description: "Send us an email and we'll respond within 24 hours",
-      contact: "hello@bibleaf.ai",
-      href: "mailto:hello@bibleaf.ai",
+      contact: "info@bibleaf.ai",
+      href: "mailto:info@bibleaf.ai",
     },
     {
       icon: <MessageCircle className="h-6 w-6 text-amber-600" />,
@@ -73,8 +73,8 @@ export default function ContactPage() {
       icon: <Phone className="h-6 w-6 text-amber-600" />,
       title: "Phone Support",
       description: "Call us for urgent technical issues",
-      contact: "+1 (555) 123-4567",
-      href: "tel:+15551234567",
+      contact: "+1 (480) 840-7446",
+      href: "tel:+14808407446",
     },
   ]
 
