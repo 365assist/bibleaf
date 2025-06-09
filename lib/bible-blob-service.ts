@@ -627,6 +627,35 @@ class BibleBlobService {
       }
     }
   }
+
+  // Ensure the Bible blob service is properly configured and accessible
+  // The service should handle:
+  // 1. Full Bible translations (KJV, WEB, ASV, YLT, DARBY)
+  // 2. Comprehensive search across all verses
+  // 3. Chapter and verse retrieval
+  // 4. Daily verse functionality
+  // 5. Random verse selection
+
+  // Add a method to check if Bible data is available
+  async checkBibleDataAvailability(): Promise<{ available: boolean; translations: string[]; totalVerses: number }> {
+    try {
+      const translations = await this.listAvailableTranslations()
+      const stats = await this.getBibleStats()
+
+      return {
+        available: translations.length > 0,
+        translations,
+        totalVerses: stats.totalVerses,
+      }
+    } catch (error) {
+      console.error("Error checking Bible data availability:", error)
+      return {
+        available: false,
+        translations: [],
+        totalVerses: 0,
+      }
+    }
+  }
 }
 
 export const bibleBlobService = new BibleBlobService()
