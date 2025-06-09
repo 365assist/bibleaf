@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description:
     "Experience Scripture with AI-powered insights, daily devotionals, and spiritual guidance. Join thousands discovering deeper meaning in God's Word through intelligent Bible study tools.",
   manifest: "/manifest.json",
-  themeColor: "#e9b949",
+  themeColor: "#8b5a3c",
   viewport: "width=device-width, initial-scale=1, maximum-scale=5",
   applicationName: "BibleAF",
   keywords: [
@@ -149,18 +149,18 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} divine-light-bg`}>
+      <body className={`${inter.className} refined-bg`}>
         {/* Skip to content link for accessibility */}
         <a
           href="#main-content"
-          className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-amber-600 focus:text-white focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+          className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-warm-600 focus:text-white focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-warm-500"
           aria-label="Skip to main content"
         >
           Skip to main content
         </a>
 
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <div className="divine-light-overlay min-h-screen">
+          <div className="refined-overlay min-h-screen">
             <StickyNavigation />
             <main id="main-content" role="main" tabIndex={-1}>
               {children}

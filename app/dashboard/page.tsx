@@ -1,657 +1,414 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Search,
-  Book,
-  Sparkles,
-  Heart,
-  TrendingUp,
-  Clock,
-  Bookmark,
-  Volume2,
-  Brain,
-  Globe,
-  Star,
-  Zap,
-  Users,
-  Award,
-  Target,
-  Lightbulb,
-} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Search,
+  BookOpen,
+  Heart,
+  MessageSquare,
+  Calendar,
+  TrendingUp,
+  Clock,
+  Play,
+  ChevronRight,
+  User,
+  Settings,
+  Bell,
+} from "lucide-react"
+
+import AIBibleSearch from "@/components/ai-bible-search"
+import LifeGuidance from "@/components/life-guidance"
+import ConversationalGuidance from "@/components/conversational-guidance"
+import DailyVerse from "@/components/daily-verse"
+import { AuthService } from "@/lib/auth"
 
 interface DashboardStats {
-  totalVerses: number
-  totalTranslations: number
-  searchesToday: number
-  favoriteVerses: number
-  studyStreak: number
-  aiInsights: number
+  versesRead: number
+  searchesPerformed: number
+  guidanceReceived: number
+  streakDays: number
 }
 
-interface BibleVerse {
-  book: string
-  chapter: number
-  verse: number
-  text: string
-  translation: string
-  bookName: string
-}
-
-export default function EnhancedDashboard() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [dailyVerse, setDailyVerse] = useState<BibleVerse | null>(null)
+export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState("overview")
+  const [user, setUser] = useState<any>(null)
   const [stats, setStats] = useState<DashboardStats>({
-    totalVerses: 311020,
-    totalTranslations: 10,
-    searchesToday: 0,
-    favoriteVerses: 0,
-    studyStreak: 1,
-    aiInsights: 0,
+    versesRead: 0,
+    searchesPerformed: 0,
+    guidanceReceived: 0,
+    streakDays: 0,
   })
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    loadDailyVerse()
-    loadUserStats()
+    const currentUser = AuthService.getCurrentUser()
+    if (currentUser) {
+      setUser(currentUser)
+      loadUserStats()
+    }
+    setIsLoading(false)
   }, [])
 
-  const loadDailyVerse = async () => {
+  const loadUserStats = async () => {
     try {
-      console.log("Loading daily verse...")
-      const response = await fetch("/api/bible/daily-verse?translation=niv")
-      console.log("Response status:", response.status)
-
-      if (response.ok) {
-        const data = await response.json()
-        console.log("Response data:", data)
-
-        if (data.success && data.verse) {
-          setDailyVerse({
-            book: data.verse.book,
-            chapter: data.verse.chapter,
-            verse: data.verse.verse,
-            text: data.verse.text,
-            translation: data.verse.translation,
-            bookName: data.verse.bookName || data.verse.book,
-          })
-          console.log("Daily verse set successfully")
-          return
-        }
-      }
-
-      console.log("API failed, using fallback")
-      // Fallback verse
-      setDailyVerse({
-        book: "psalms",
-        chapter: 119,
-        verse: 105,
-        text: "Your word is a lamp for my feet, a light on my path.",
-        translation: "NIV",
-        bookName: "Psalms",
+      // Simulate loading user stats
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setStats({
+        versesRead: 127,
+        searchesPerformed: 43,
+        guidanceReceived: 18,
+        streakDays: 7,
       })
     } catch (error) {
-      console.error("Error loading daily verse:", error)
-      // Fallback verse
-      setDailyVerse({
-        book: "psalms",
-        chapter: 119,
-        verse: 105,
-        text: "Your word is a lamp for my feet, a light on my path.",
-        translation: "NIV",
-        bookName: "Psalms",
-      })
+      console.error("Failed to load user stats:", error)
     }
   }
 
-  const loadUserStats = async () => {
-    setStats({
-      totalVerses: 311020,
-      totalTranslations: 10,
-      searchesToday: Math.floor(Math.random() * 20),
-      favoriteVerses: Math.floor(Math.random() * 50),
-      studyStreak: Math.floor(Math.random() * 30) + 1,
-      aiInsights: Math.floor(Math.random() * 100),
-    })
+  const handleSaveVerse = (verse: { reference: string; text: string }) => {
+    console.log("Saving verse:", verse)
+    // Implement verse saving logic
   }
 
-  const handleQuickSearch = async () => {
-    if (!searchQuery.trim()) return
-    setLoading(true)
-    window.location.href = `/bible?q=${encodeURIComponent(searchQuery)}`
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full bg-warm-100 flex items-center justify-center animate-pulse">
+            <BookOpen className="w-8 h-8 text-warm-600" />
+          </div>
+          <p className="text-warm-700">Loading your spiritual journey...</p>
+        </div>
+      </div>
+    )
   }
-
-  const quickSearchTerms = [
-    "love",
-    "faith",
-    "hope",
-    "peace",
-    "joy",
-    "strength",
-    "wisdom",
-    "grace",
-    "salvation",
-    "forgiveness",
-    "prayer",
-    "trust",
-  ]
-
-  const featuredFeatures = [
-    {
-      icon: <Brain className="h-6 w-6" />,
-      title: "AI Bible Study",
-      description: "Get personalized insights and explanations",
-      href: "/test-search-ui",
-      color: "bg-gradient-to-br from-amber-500 to-amber-600",
-      image: "/images/ai-bible-robot.png",
-    },
-    {
-      icon: <Volume2 className="h-6 w-6" />,
-      title: "Audio Bible",
-      description: "Listen to scripture with natural voices",
-      href: "/tts-enhanced-demo",
-      color: "bg-gradient-to-br from-amber-600 to-orange-600",
-      image: "/images/hand-bible-pages.png",
-    },
-    {
-      icon: <Bookmark className="h-6 w-6" />,
-      title: "Study Plans",
-      description: "Structured reading and study guides",
-      href: "/test-comprehensive",
-      color: "bg-gradient-to-br from-orange-500 to-amber-500",
-      image: "/images/ai-jesus-teaching-children.png",
-    },
-    {
-      icon: <Users className="h-6 w-6" />,
-      title: "Community",
-      description: "Connect with other believers",
-      href: "/about",
-      color: "bg-gradient-to-br from-amber-400 to-yellow-500",
-      image: "/images/divine-sunset-mountains.png",
-    },
-  ]
 
   return (
-    <div className="min-h-screen divine-light-bg">
-      <div className="divine-light-overlay">
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          {/* Header with Background Image */}
-          <div className="mb-8 relative">
-            <div className="absolute inset-0 rounded-2xl overflow-hidden">
-              <Image
-                src="/images/divine-light-background.png"
-                alt="Divine light background"
-                fill
-                className="object-cover opacity-20"
-                priority
-              />
+    <div className="min-h-screen bg-gradient-to-br from-warm-50 via-white to-warm-100">
+      {/* Header with subtle background */}
+      <div className="relative bg-gradient-to-r from-warm-100 to-warm-200 border-b border-warm-300">
+        <div className="absolute inset-0 opacity-30">
+          <Image src="/images/divine-light-background.png" alt="" fill className="object-cover" priority />
+        </div>
+        <div className="relative container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-semibold text-warm-900">Welcome back{user?.name ? `, ${user.name}` : ""}</h1>
+              <p className="text-warm-700">Continue your spiritual journey with AI-powered insights</p>
             </div>
-            <div className="relative z-10 p-8">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 bg-clip-text text-transparent">
-                    Welcome to BibleAF
-                  </h1>
-                  <p className="text-lg text-amber-800 dark:text-amber-300 mt-2">
-                    Your AI-powered companion for Bible study and spiritual growth
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1">
-                    <Star className="h-4 w-4 mr-1" />
-                    Premium
-                  </Badge>
-                  <Button className="divine-button" size="sm">
-                    <Zap className="h-4 w-4 mr-2" />
-                    Upgrade
-                  </Button>
-                </div>
-              </div>
-
-              {/* Quick Search */}
-              <Card className="divine-light-card border-amber-200 dark:border-amber-800">
-                <CardContent className="p-6">
-                  <div className="flex gap-4 items-center">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-600 h-5 w-5" />
-                        <Input
-                          placeholder="Search the entire Bible... (e.g., 'love your enemies', 'faith hope love')"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handleQuickSearch()}
-                          className="pl-10 h-12 text-lg border-amber-200 dark:border-amber-800 focus:border-amber-500 focus:ring-amber-500"
-                        />
-                      </div>
-                    </div>
-                    <Button onClick={handleQuickSearch} size="lg" className="divine-button h-12 px-8">
-                      <Search className="h-5 w-5 mr-2" />
-                      Search
-                    </Button>
-                  </div>
-
-                  <div className="mt-4">
-                    <p className="text-sm text-amber-700 dark:text-amber-400 mb-2">Popular searches:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {quickSearchTerms.map((term) => (
-                        <Button
-                          key={term}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSearchQuery(term)
-                            setTimeout(() => handleQuickSearch(), 100)
-                          }}
-                          className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/20"
-                        >
-                          {term}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-100 text-sm">Total Verses</p>
-                    <p className="text-2xl font-bold">{stats.totalVerses.toLocaleString()}</p>
-                  </div>
-                  <Book className="h-8 w-8 text-amber-200" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-orange-100 text-sm">Translations</p>
-                    <p className="text-2xl font-bold">{stats.totalTranslations}</p>
-                  </div>
-                  <Globe className="h-8 w-8 text-orange-200" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-yellow-100 text-sm">Study Streak</p>
-                    <p className="text-2xl font-bold">{stats.studyStreak} days</p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-yellow-200" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-amber-600 to-orange-700 text-white border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-100 text-sm">Searches Today</p>
-                    <p className="text-2xl font-bold">{stats.searchesToday}</p>
-                  </div>
-                  <Search className="h-8 w-8 text-amber-200" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-orange-600 to-red-500 text-white border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-orange-100 text-sm">Saved Verses</p>
-                    <p className="text-2xl font-bold">{stats.favoriteVerses}</p>
-                  </div>
-                  <Heart className="h-8 w-8 text-orange-200" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-amber-700 to-orange-800 text-white border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-100 text-sm">AI Insights</p>
-                    <p className="text-2xl font-bold">{stats.aiInsights}</p>
-                  </div>
-                  <Sparkles className="h-8 w-8 text-amber-200" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content */}
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left Column */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Daily Verse */}
-              <Card className="divine-light-card border-amber-200 dark:border-amber-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-                    <Clock className="h-5 w-5" />
-                    Verse of the Day
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {dailyVerse ? (
-                    <div className="space-y-4">
-                      <blockquote className="text-lg italic text-amber-900 dark:text-amber-200 leading-relaxed">
-                        "{dailyVerse.text}"
-                      </blockquote>
-                      <div className="flex items-center justify-between">
-                        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                          {dailyVerse.bookName} {dailyVerse.chapter}:{dailyVerse.verse} ({dailyVerse.translation})
-                        </Badge>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                          >
-                            <Heart className="h-4 w-4 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                          >
-                            <Volume2 className="h-4 w-4 mr-1" />
-                            Listen
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="animate-pulse">
-                      <div className="h-4 bg-amber-200 rounded w-3/4 mb-2"></div>
-                      <div className="h-4 bg-amber-200 rounded w-1/2"></div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Featured Features */}
-              <Card className="divine-light-card border-amber-200 dark:border-amber-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-                    <Sparkles className="h-5 w-5" />
-                    Featured Tools
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {featuredFeatures.map((feature, index) => (
-                      <Link key={index} href={feature.href}>
-                        <Card className="divine-light-card hover:shadow-xl transition-all duration-200 cursor-pointer group border-amber-200 dark:border-amber-800">
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="relative">
-                                <div
-                                  className={`p-2 rounded-lg ${feature.color} text-white group-hover:scale-110 transition-transform shadow-lg`}
-                                >
-                                  {feature.icon}
-                                </div>
-                                <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                                  <Image
-                                    src={feature.image || "/placeholder.svg"}
-                                    alt={feature.title}
-                                    width={32}
-                                    height={32}
-                                    className="object-cover"
-                                  />
-                                </div>
-                              </div>
-                              <div>
-                                <h3 className="font-semibold mb-1 text-amber-800 dark:text-amber-300">
-                                  {feature.title}
-                                </h3>
-                                <p className="text-sm text-amber-700 dark:text-amber-400">{feature.description}</p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Advanced Search */}
-              <Card className="divine-light-card border-amber-200 dark:border-amber-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-                    <Target className="h-5 w-5" />
-                    Advanced Bible Search
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="simple" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-amber-50 dark:bg-amber-900/20">
-                      <TabsTrigger
-                        value="simple"
-                        className="data-[state=active]:bg-amber-200 data-[state=active]:text-amber-800"
-                      >
-                        Simple
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="advanced"
-                        className="data-[state=active]:bg-amber-200 data-[state=active]:text-amber-800"
-                      >
-                        Advanced
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="ai"
-                        className="data-[state=active]:bg-amber-200 data-[state=active]:text-amber-800"
-                      >
-                        AI Search
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="simple" className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium mb-2 block text-amber-800 dark:text-amber-300">
-                            Translation
-                          </label>
-                          <Select defaultValue="kjv">
-                            <SelectTrigger className="border-amber-300 focus:border-amber-500">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="kjv">King James Version</SelectItem>
-                              <SelectItem value="niv">New International Version</SelectItem>
-                              <SelectItem value="esv">English Standard Version</SelectItem>
-                              <SelectItem value="nlt">New Living Translation</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block text-amber-800 dark:text-amber-300">
-                            Testament
-                          </label>
-                          <Select defaultValue="both">
-                            <SelectTrigger className="border-amber-300 focus:border-amber-500">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="both">Both Testaments</SelectItem>
-                              <SelectItem value="old">Old Testament</SelectItem>
-                              <SelectItem value="new">New Testament</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <Button className="w-full divine-button" asChild>
-                        <Link href="/bible">
-                          <Search className="h-4 w-4 mr-2" />
-                          Open Advanced Search
-                        </Link>
-                      </Button>
-                    </TabsContent>
-
-                    <TabsContent value="advanced" className="space-y-4">
-                      <p className="text-sm text-amber-700 dark:text-amber-400">
-                        Search across multiple translations, filter by books, and use advanced operators.
-                      </p>
-                      <Button className="w-full divine-button" asChild>
-                        <Link href="/bible?mode=advanced">
-                          <Target className="h-4 w-4 mr-2" />
-                          Advanced Search
-                        </Link>
-                      </Button>
-                    </TabsContent>
-
-                    <TabsContent value="ai" className="space-y-4">
-                      <p className="text-sm text-amber-700 dark:text-amber-400">
-                        Ask questions in natural language and get AI-powered Bible verse recommendations.
-                      </p>
-                      <Button className="w-full divine-button" asChild>
-                        <Link href="/test-search-ui">
-                          <Brain className="h-4 w-4 mr-2" />
-                          AI Bible Search
-                        </Link>
-                      </Button>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Quick Actions */}
-              <Card className="divine-light-card border-amber-200 dark:border-amber-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-                    <Lightbulb className="h-5 w-5" />
-                    Quick Actions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-amber-300 text-amber-700 hover:bg-amber-50"
-                    asChild
-                  >
-                    <Link href="/test-comprehensive">
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Random Verse
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-amber-300 text-amber-700 hover:bg-amber-50"
-                    asChild
-                  >
-                    <Link href="/bible">
-                      <Book className="h-4 w-4 mr-2" />
-                      Reading Plan
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-amber-300 text-amber-700 hover:bg-amber-50"
-                    asChild
-                  >
-                    <Link href="/contact">
-                      <Heart className="h-4 w-4 mr-2" />
-                      Prayer Requests
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-amber-300 text-amber-700 hover:bg-amber-50"
-                    asChild
-                  >
-                    <Link href="/test-full-bible">
-                      <Bookmark className="h-4 w-4 mr-2" />
-                      My Study Notes
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card className="divine-light-card border-amber-200 dark:border-amber-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-                    <Clock className="h-5 w-5" />
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                      <span className="text-amber-800 dark:text-amber-300">Searched for "love" in KJV</span>
-                      <span className="text-amber-600 dark:text-amber-400 ml-auto">2h ago</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <span className="text-amber-800 dark:text-amber-300">Saved John 3:16</span>
-                      <span className="text-amber-600 dark:text-amber-400 ml-auto">1d ago</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      <span className="text-amber-800 dark:text-amber-300">Completed daily reading</span>
-                      <span className="text-amber-600 dark:text-amber-400 ml-auto">2d ago</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Achievements */}
-              <Card className="divine-light-card border-amber-200 dark:border-amber-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-                    <Award className="h-5 w-5" />
-                    Achievements
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                        <Star className="h-4 w-4 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm text-amber-800 dark:text-amber-300">First Search</p>
-                        <p className="text-xs text-amber-600 dark:text-amber-400">Completed your first Bible search</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                        <Book className="h-4 w-4 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm text-amber-800 dark:text-amber-300">Daily Reader</p>
-                        <p className="text-xs text-amber-600 dark:text-amber-400">Read for 7 consecutive days</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" className="border-warm-300 text-warm-700 hover:bg-warm-50">
+                <Bell className="w-4 h-4 mr-2" />
+                Notifications
+              </Button>
+              <Button variant="outline" size="sm" className="border-warm-300 text-warm-700 hover:bg-warm-50">
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="refined-card border-warm-200 hover:shadow-lg transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-warm-600">Verses Read</p>
+                  <p className="text-2xl font-semibold text-warm-900">{stats.versesRead}</p>
+                </div>
+                <div className="w-12 h-12 bg-warm-100 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-warm-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="refined-card border-warm-200 hover:shadow-lg transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-warm-600">AI Searches</p>
+                  <p className="text-2xl font-semibold text-warm-900">{stats.searchesPerformed}</p>
+                </div>
+                <div className="w-12 h-12 bg-warm-100 rounded-lg flex items-center justify-center">
+                  <Search className="w-6 h-6 text-warm-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="refined-card border-warm-200 hover:shadow-lg transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-warm-600">Guidance Sessions</p>
+                  <p className="text-2xl font-semibold text-warm-900">{stats.guidanceReceived}</p>
+                </div>
+                <div className="w-12 h-12 bg-warm-100 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-warm-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="refined-card border-warm-200 hover:shadow-lg transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-warm-600">Study Streak</p>
+                  <p className="text-2xl font-semibold text-warm-900">{stats.streakDays} days</p>
+                </div>
+                <div className="w-12 h-12 bg-warm-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-warm-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 bg-warm-100 border border-warm-200">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-warm-900">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="search" className="data-[state=active]:bg-white data-[state=active]:text-warm-900">
+              AI Search
+            </TabsTrigger>
+            <TabsTrigger value="guidance" className="data-[state=active]:bg-white data-[state=active]:text-warm-900">
+              Life Guidance
+            </TabsTrigger>
+            <TabsTrigger
+              value="conversation"
+              className="data-[state=active]:bg-white data-[state=active]:text-warm-900"
+            >
+              Conversation
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="data-[state=active]:bg-white data-[state=active]:text-warm-900">
+              Profile
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* Daily Verse Section */}
+            <Card className="refined-card border-warm-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-warm-900">
+                  <Calendar className="w-5 h-5 text-warm-600" />
+                  Today's Verse
+                </CardTitle>
+                <CardDescription className="text-warm-600">
+                  Your personalized daily Scripture with AI insights
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DailyVerse userId={user?.id || "guest"} onSaveVerse={handleSaveVerse} />
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="refined-card border-warm-200 hover:shadow-lg transition-all duration-300 group cursor-pointer">
+                <CardContent className="p-6">
+                  <div className="relative overflow-hidden rounded-lg mb-4 h-32">
+                    <Image
+                      src="/images/ai-bible-robot.png"
+                      alt="AI Bible Study"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-warm-900/20 group-hover:bg-warm-900/10 transition-colors" />
+                  </div>
+                  <h3 className="font-semibold text-warm-900 mb-2">AI Bible Study</h3>
+                  <p className="text-sm text-warm-600 mb-4">
+                    Search Scripture with intelligent AI that understands context and meaning
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-warm-300 text-warm-700 hover:bg-warm-50"
+                    onClick={() => setActiveTab("search")}
+                  >
+                    Start Searching
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="refined-card border-warm-200 hover:shadow-lg transition-all duration-300 group cursor-pointer">
+                <CardContent className="p-6">
+                  <div className="relative overflow-hidden rounded-lg mb-4 h-32">
+                    <Image
+                      src="/images/hand-bible-pages.png"
+                      alt="Audio Bible"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-warm-900/20 group-hover:bg-warm-900/10 transition-colors" />
+                  </div>
+                  <h3 className="font-semibold text-warm-900 mb-2">Audio Bible</h3>
+                  <p className="text-sm text-warm-600 mb-4">
+                    Listen to Scripture with high-quality text-to-speech narration
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-warm-300 text-warm-700 hover:bg-warm-50"
+                    asChild
+                  >
+                    <Link href="/bible">
+                      <Play className="w-4 h-4 mr-2" />
+                      Listen Now
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="refined-card border-warm-200 hover:shadow-lg transition-all duration-300 group cursor-pointer">
+                <CardContent className="p-6">
+                  <div className="relative overflow-hidden rounded-lg mb-4 h-32">
+                    <Image
+                      src="/images/ai-jesus-teaching-children.png"
+                      alt="Study Plans"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-warm-900/20 group-hover:bg-warm-900/10 transition-colors" />
+                  </div>
+                  <h3 className="font-semibold text-warm-900 mb-2">Study Plans</h3>
+                  <p className="text-sm text-warm-600 mb-4">
+                    Structured Bible study plans with AI-powered insights and guidance
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-warm-300 text-warm-700 hover:bg-warm-50"
+                    asChild
+                  >
+                    <Link href="/study-plans">
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Browse Plans
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Activity */}
+            <Card className="refined-card border-warm-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-warm-900">
+                  <Clock className="w-5 h-5 text-warm-600" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg">
+                    <div className="w-8 h-8 bg-warm-200 rounded-full flex items-center justify-center">
+                      <Search className="w-4 h-4 text-warm-700" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-warm-900">Searched for "verses about hope"</p>
+                      <p className="text-xs text-warm-600">2 hours ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg">
+                    <div className="w-8 h-8 bg-warm-200 rounded-full flex items-center justify-center">
+                      <Heart className="w-4 h-4 text-warm-700" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-warm-900">Saved Jeremiah 29:11</p>
+                      <p className="text-xs text-warm-600">Yesterday</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg">
+                    <div className="w-8 h-8 bg-warm-200 rounded-full flex items-center justify-center">
+                      <MessageSquare className="w-4 h-4 text-warm-700" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-warm-900">Received guidance on relationships</p>
+                      <p className="text-xs text-warm-600">3 days ago</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="search">
+            <AIBibleSearch
+              userId={user?.id || "guest"}
+              onSaveVerse={handleSaveVerse}
+              onSearchComplete={() => console.log("Search completed")}
+            />
+          </TabsContent>
+
+          <TabsContent value="guidance">
+            <LifeGuidance
+              userId={user?.id || "guest"}
+              onSaveVerse={handleSaveVerse}
+              onGuidanceComplete={() => console.log("Guidance completed")}
+            />
+          </TabsContent>
+
+          <TabsContent value="conversation">
+            <ConversationalGuidance
+              userId={user?.id || "guest"}
+              onSaveVerse={handleSaveVerse}
+              onGuidanceComplete={() => console.log("Conversation completed")}
+            />
+          </TabsContent>
+
+          <TabsContent value="profile" className="space-y-6">
+            <Card className="refined-card border-warm-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-warm-900">
+                  <User className="w-5 h-5 text-warm-600" />
+                  Profile Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-warm-900">Display Name</label>
+                    <input
+                      type="text"
+                      className="w-full mt-1 px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-warm-500 focus:border-warm-500"
+                      defaultValue={user?.name || ""}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-warm-900">Email</label>
+                    <input
+                      type="email"
+                      className="w-full mt-1 px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-warm-500 focus:border-warm-500"
+                      defaultValue={user?.email || ""}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-warm-900">Preferred Bible Translation</label>
+                    <select className="w-full mt-1 px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-warm-500 focus:border-warm-500">
+                      <option value="NIV">NIV</option>
+                      <option value="ESV">ESV</option>
+                      <option value="KJV">KJV</option>
+                      <option value="NASB">NASB</option>
+                    </select>
+                  </div>
+                  <Button className="refined-button">Save Changes</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

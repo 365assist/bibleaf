@@ -53,24 +53,19 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Divine light theme colors
-        divine: {
-          light: "#f9d976",
-          DEFAULT: "#e9b949",
-          dark: "#c99a2e",
-        },
-        amber: {
-          50: "#fffbeb",
-          100: "#fef3c7",
-          200: "#fde68a",
-          300: "#fcd34d",
-          400: "#fbbf24",
-          500: "#f59e0b",
-          600: "#d97706",
-          700: "#b45309",
-          800: "#92400e",
-          900: "#78350f",
-          950: "#451a03",
+        // Refined warm color palette
+        warm: {
+          50: "hsl(var(--warm-50))",
+          100: "hsl(var(--warm-100))",
+          200: "hsl(var(--warm-200))",
+          300: "hsl(var(--warm-300))",
+          400: "hsl(var(--warm-400))",
+          500: "hsl(var(--warm-500))",
+          600: "hsl(var(--warm-600))",
+          700: "hsl(var(--warm-700))",
+          800: "hsl(var(--warm-800))",
+          900: "hsl(var(--warm-900))",
+          950: "hsl(var(--warm-950))",
         },
       },
       borderRadius: {
@@ -87,18 +82,35 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "divine-glow": {
-          "0%, 100%": { opacity: "0.7" },
+        "gentle-glow": {
+          "0%, 100%": { opacity: "0.8" },
           "50%": { opacity: "1" },
+        },
+        "subtle-float": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-4px)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "divine-glow": "divine-glow 3s ease-in-out infinite",
+        "gentle-glow": "gentle-glow 4s ease-in-out infinite",
+        "subtle-float": "subtle-float 6s ease-in-out infinite",
       },
       backgroundImage: {
-        "divine-gradient": "linear-gradient(to bottom, rgba(249, 217, 118, 0.2), rgba(233, 185, 73, 0.1))",
+        "refined-gradient": "linear-gradient(135deg, hsl(var(--warm-50)), hsl(var(--warm-100)))",
+        "warm-gradient": "linear-gradient(135deg, hsl(var(--warm-100)), hsl(var(--warm-200)))",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
+      spacing: {
+        "18": "4.5rem",
+        "88": "22rem",
+      },
+      maxWidth: {
+        "8xl": "88rem",
+        "9xl": "96rem",
       },
     },
   },
