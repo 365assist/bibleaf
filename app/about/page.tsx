@@ -164,9 +164,9 @@ export default function AboutPage() {
                   </Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link href="mailto:hello@bibleaf.ai">
+                  <Link href="mailto:info@bibleaf.ai">
                     <Mail className="h-4 w-4 mr-2" />
-                    hello@bibleaf.ai
+                    info@bibleaf.ai
                   </Link>
                 </Button>
               </div>
