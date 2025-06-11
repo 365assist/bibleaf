@@ -18,9 +18,10 @@ import {
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Search, Menu, Sun, Moon, Book, Heart, User, Home, Info, DollarSign, Mail } from "lucide-react"
 import { AuthService } from "@/lib/auth"
+import { useTheme } from "next-themes"
 
 export function StickyNavigation() {
-  const { theme, setTheme } = "next-themes"
+  const { theme, setTheme } = useTheme()
   const [isScrolled, setIsScrolled] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -71,7 +72,7 @@ export function StickyNavigation() {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 font-bold text-xl hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-warm-500 focus:ring-offset-2 rounded-md"
+            className="flex items-center gap-2 font-bold text-xl hover:opacity-80 transition-opacity focus:outline-none focus:ring-warm-500 focus:ring-offset-2 rounded-md"
             aria-label="BibleAF - Go to homepage"
           >
             <span className="text-warm-700">Bible</span>
