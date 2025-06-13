@@ -26,8 +26,9 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan, userId
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          priceId: `price_${plan.id}`, // In a real app, this would be a real Stripe price ID
-          customerId: userId,
+          // The API expects the plan ID and user ID
+          planId: plan.id,
+          userId,
           successUrl: `${window.location.origin}/dashboard/profile?subscription=success`,
           cancelUrl: `${window.location.origin}/dashboard/profile?subscription=canceled`,
         }),
