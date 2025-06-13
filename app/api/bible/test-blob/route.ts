@@ -21,11 +21,12 @@ export async function GET(request: NextRequest) {
         count: translations.length,
       })
       console.log("Available translations:", translations)
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
       results.tests.push({
         name: "List Translations",
         success: false,
-        error: error.message,
+        error: error.message || "Unknown error occurred",
       })
       console.error("Translation list failed:", error)
     }
@@ -40,11 +41,12 @@ export async function GET(request: NextRequest) {
         result: stats,
       })
       console.log("Bible stats:", stats)
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
       results.tests.push({
         name: "Bible Stats",
         success: false,
-        error: error.message,
+        error: error.message || "Unknown error occurred",
       })
       console.error("Bible stats failed:", error)
     }
@@ -60,11 +62,12 @@ export async function GET(request: NextRequest) {
         count: searchResults.length,
       })
       console.log("Search results:", searchResults.length, "verses found")
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
       results.tests.push({
         name: "Search 'love'",
         success: false,
-        error: error.message,
+        error: error.message || "Unknown error occurred",
       })
       console.error("Search failed:", error)
     }
@@ -79,11 +82,12 @@ export async function GET(request: NextRequest) {
         result: verse,
       })
       console.log("John 3:16:", verse)
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
       results.tests.push({
         name: "Get John 3:16",
         success: false,
-        error: error.message,
+        error: error.message || "Unknown error occurred",
       })
       console.error("Get verse failed:", error)
     }
@@ -98,13 +102,37 @@ export async function GET(request: NextRequest) {
         result: availability,
       })
       console.log("Data availability:", availability)
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
       results.tests.push({
         name: "Data Availability",
         success: false,
-        error: error.message,
+        error: error.message || "Unknown error occurred",
       })
       console.error("Data availability check failed:", error)
+    }
+
+    // Test 6: Check environment variables
+    try {
+      console.log("Test 6: Checking environment variables...")
+      const blobTokenExists = !!process.env.BLOB_READ_WRITE_TOKEN
+      results.tests.push({
+        name: "Environment Variables",
+        success: true,
+        result: {
+          BLOB_READ_WRITE_TOKEN_EXISTS: blobTokenExists,
+          BLOB_READ_WRITE_TOKEN_LENGTH: blobTokenExists ? process.env.BLOB_READ_WRITE_TOKEN.length : 0,
+        },
+      })
+      console.log("Environment variables check:", { blobTokenExists })
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
+      results.tests.push({
+        name: "Environment Variables",
+        success: false,
+        error: error.message || "Unknown error occurred",
+      })
+      console.error("Environment variables check failed:", error)
     }
 
     const successCount = results.tests.filter((t) => t.success).length
@@ -130,14 +158,18 @@ export async function GET(request: NextRequest) {
               ]
             : ["All tests passed! Bible search should be working properly"],
     })
-  } catch (error) {
+  } catch (err) {
+    // Improved error handling for the main try/catch
+    const error = err instanceof Error ? err : new Error(String(err))
     console.error("Blob test error:", error)
+
     return NextResponse.json(
       {
         success: false,
         error: "Failed to test blob storage",
-        details: error.message,
-        stack: error.stack,
+        details: error.message || "Unknown error occurred",
+        // Don't include stack trace in production for security reasons
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
       { status: 500 },
     )
