@@ -1,5 +1,6 @@
 import { serverEnv, isServer } from "./env-utils"
 import { openaiService } from "./openai-service"
+import { bibleBlobService } from "./bible-blob-service"
 
 // AI service for Deep Infra integration
 interface AISearchResult {
@@ -578,8 +579,23 @@ Life's challenges can feel overwhelming, but they're also opportunities for grow
       return this.getIntelligentSearchResults(query)
     }
 
-    console.log(`=== Bible Search Request ===`)
+    console.log(`=== Comprehensive Bible Search Request ===`)
     console.log(`Query: "${query}"`)
+
+    try {
+      // First, try to search the actual Bible database using bibleBlobService
+      console.log("Attempting comprehensive Bible database search...")
+      const bibleResults = await this.searchCompleteBibleDatabase(query)
+
+      if (bibleResults && bibleResults.length > 0) {
+        console.log("Bible database search successful, found", bibleResults.length, "results")
+        return bibleResults
+      }
+
+      console.log("Bible database search returned no results, trying AI services...")
+    } catch (error) {
+      console.error("Bible database search failed:", error)
+    }
 
     // Try OpenAI first for comprehensive search
     try {
@@ -613,6 +629,206 @@ Life's challenges can feel overwhelming, but they're also opportunities for grow
     const fallbackResults = this.getComprehensiveBibleSearch(query)
     console.log("Enhanced fallback results:", fallbackResults.length, "verses found")
     return fallbackResults
+  }
+
+  // NEW: Search the complete Bible database using bibleBlobService
+  private async searchCompleteBibleDatabase(query: string): Promise<AISearchResult[]> {
+    try {
+      console.log("=== Searching Complete Bible Database ===")
+
+      // Get all available translations
+      const translations = await bibleBlobService.listAvailableTranslations()
+      console.log("Available translations:", translations)
+
+      if (translations.length === 0) {
+        console.log("No translations available in blob storage")
+        return []
+      }
+
+      const allResults: Array<AISearchResult & { translation: string }> = []
+
+      // Search across all translations
+      for (const translationId of translations) {
+        try {
+          console.log(`Searching translation: ${translationId}`)
+
+          // Use bibleBlobService to search this translation
+          const verses = await bibleBlobService.searchBible(translationId, query, 20)
+          console.log(`Found ${verses.length} verses in ${translationId}`)
+
+          // Convert to AISearchResult format
+          for (const verse of verses) {
+            const relevanceScore = this.calculateRelevanceScore(query, verse.text)
+            const context = this.generateContext(verse.book, verse.chapter, verse.verse, verse.text)
+
+            allResults.push({
+              reference: `${this.formatBookName(verse.book)} ${verse.chapter}:${verse.verse}`,
+              text: verse.text,
+              relevanceScore,
+              context,
+              translation: verse.translation,
+            })
+          }
+        } catch (error) {
+          console.error(`Error searching translation ${translationId}:`, error)
+          continue
+        }
+      }
+
+      // Sort by relevance score and remove duplicates
+      const uniqueResults = this.removeDuplicateVerses(allResults)
+      const sortedResults = uniqueResults
+        .sort((a, b) => b.relevanceScore - a.relevanceScore)
+        .slice(0, 10) // Return top 10 results
+        .map(({ translation, ...result }) => result) // Remove translation field
+
+      console.log(`Returning ${sortedResults.length} results from Bible database`)
+      return sortedResults
+    } catch (error) {
+      console.error("Error in searchCompleteBibleDatabase:", error)
+      return []
+    }
+  }
+
+  // Helper method to calculate relevance score
+  private calculateRelevanceScore(query: string, verseText: string): number {
+    const queryTerms = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((term) => term.length > 2)
+    const textLower = verseText.toLowerCase()
+
+    let score = 0
+    let totalMatches = 0
+
+    for (const term of queryTerms) {
+      const matches = (textLower.match(new RegExp(term, "g")) || []).length
+      if (matches > 0) {
+        score += matches * (term.length / 3) // Longer terms get higher weight
+        totalMatches += matches
+      }
+    }
+
+    // Bonus for multiple term matches
+    if (totalMatches > 1) {
+      score *= 1.2
+    }
+
+    // Normalize score to 0-1 range
+    return Math.min(score / 10, 1.0)
+  }
+
+  // Helper method to generate context
+  private generateContext(book: string, chapter: number, verse: number, text: string): string {
+    const bookName = this.formatBookName(book)
+    const themes = this.identifyThemes(text)
+
+    if (themes.length > 0) {
+      return `This verse from ${bookName} speaks about ${themes.join(", ")}. It provides biblical insight into these important spiritual themes.`
+    }
+
+    return `This verse from ${bookName} chapter ${chapter} offers biblical wisdom and guidance for life.`
+  }
+
+  // Helper method to identify themes in verse text
+  private identifyThemes(text: string): string[] {
+    const textLower = text.toLowerCase()
+    const themes: string[] = []
+
+    const themeKeywords = {
+      love: ["love", "beloved", "loving"],
+      faith: ["faith", "believe", "trust"],
+      hope: ["hope", "hopeful", "future"],
+      peace: ["peace", "peaceful", "rest"],
+      strength: ["strength", "strong", "power"],
+      wisdom: ["wisdom", "wise", "understanding"],
+      forgiveness: ["forgive", "forgiveness", "mercy"],
+      salvation: ["salvation", "saved", "eternal life"],
+      prayer: ["pray", "prayer", "ask"],
+      guidance: ["guide", "path", "way", "direction"],
+    }
+
+    for (const [theme, keywords] of Object.entries(themeKeywords)) {
+      if (keywords.some((keyword) => textLower.includes(keyword))) {
+        themes.push(theme)
+      }
+    }
+
+    return themes
+  }
+
+  // Helper method to format book names
+  private formatBookName(book: string): string {
+    const bookMap: Record<string, string> = {
+      genesis: "Genesis",
+      exodus: "Exodus",
+      leviticus: "Leviticus",
+      numbers: "Numbers",
+      deuteronomy: "Deuteronomy",
+      joshua: "Joshua",
+      judges: "Judges",
+      ruth: "Ruth",
+      "1samuel": "1 Samuel",
+      "2samuel": "2 Samuel",
+      "1kings": "1 Kings",
+      "2kings": "2 Kings",
+      "1chronicles": "1 Chronicles",
+      "2chronicles": "2 Chronicles",
+      ezra: "Ezra",
+      nehemiah: "Nehemiah",
+      esther: "Esther",
+      job: "Job",
+      psalms: "Psalms",
+      proverbs: "Proverbs",
+      ecclesiastes: "Ecclesiastes",
+      songofsolomon: "Song of Solomon",
+      isaiah: "Isaiah",
+      jeremiah: "Jeremiah",
+      lamentations: "Lamentations",
+      ezekiel: "Ezekiel",
+      daniel: "Daniel",
+      hosea: "Hosea",
+      joel: "Joel",
+      amos: "Amos",
+      obadiah: "Obadiah",
+      jonah: "Jonah",
+      micah: "Micah",
+      nahum: "Nahum",
+      habakkuk: "Habakkuk",
+      zephaniah: "Zephaniah",
+      haggai: "Haggai",
+      zechariah: "Zechariah",
+      malachi: "Malachi",
+      matthew: "Matthew",
+      mark: "Mark",
+      luke: "Luke",
+      john: "John",
+      acts: "Acts",
+      romans: "Romans",
+      "1corinthians": "1 Corinthians",
+      "2corinthians": "2 Corinthians",
+      galatians: "Galatians",
+      ephesians: "Ephesians",
+      philippians: "Philippians",
+      colossians: "Colossians",
+      "1thessalonians": "1 Thessalonians",
+      "2thessalonians": "2 Thessalonians",
+      "1timothy": "1 Timothy",
+      "2timothy": "2 Timothy",
+      titus: "Titus",
+      philemon: "Philemon",
+      hebrews: "Hebrews",
+      james: "James",
+      "1peter": "1 Peter",
+      "2peter": "2 Peter",
+      "1john": "1 John",
+      "2john": "2 John",
+      "3john": "3 John",
+      jude: "Jude",
+      revelation: "Revelation",
+    }
+
+    return bookMap[book.toLowerCase()] || book
   }
 
   private async callComprehensiveBibleSearch(query: string): Promise<AISearchResult[]> {
