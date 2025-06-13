@@ -1,8 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Menu, X, Sun, Moon, Search } from "lucide-react"
 
@@ -15,11 +17,38 @@ import {
   NavigationMenuItem,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu"
+import { AuthService } from "@/lib/auth"
 
 export function StickyNavigation() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    setMounted(true)
+    const user = AuthService.getCurrentUser()
+    setIsLoggedIn(!!user)
+
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10)
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      setSearchQuery("")
+    }
+  }
 
   const routes = [
     { href: "/", label: "Home" },
@@ -34,7 +63,13 @@ export function StickyNavigation() {
   }
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      className={`sticky top-0 z-50 w-full border-b border-warm-200 transition-all duration-300 ${
+        isScrolled
+          ? "bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 shadow-sm"
+          : "bg-white/90 backdrop-blur-sm"
+      }`}
+    >
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Sheet>
@@ -84,8 +119,16 @@ export function StickyNavigation() {
                 type="search"
                 placeholder="Search..."
                 className="w-[200px] pr-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
                 onBlur={() => setIsSearchOpen(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch(e)
+                    setIsSearchOpen(false)
+                  }
+                }}
               />
               <X
                 className="absolute right-2 top-2.5 h-4 w-4 cursor-pointer opacity-70"
@@ -110,17 +153,33 @@ export function StickyNavigation() {
             <span className="sr-only">Toggle theme</span>
           </Button>
 
-          <Link href="/auth/login">
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-              Sign In
-            </Button>
-          </Link>
-
-          <Link href="/auth/signup">
-            <Button size="sm" className="hidden sm:inline-flex bg-warm-600 hover:bg-warm-700">
-              Sign Up
-            </Button>
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <Link href="/dashboard">
+                <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+                  Dashboard
+                </Button>
+              </Link>
+              <Link href="/saved-verses">
+                <Button size="sm" className="hidden sm:inline-flex bg-warm-600 hover:bg-warm-700">
+                  Saved
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/auth/login">
+                <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/auth/signup">
+                <Button size="sm" className="hidden sm:inline-flex bg-warm-600 hover:bg-warm-700">
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
