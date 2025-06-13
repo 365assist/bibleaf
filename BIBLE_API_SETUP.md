@@ -250,7 +250,7 @@ If Bible search fails:
 
 Let's update the environment variables example file to remove YouVersion references:
 
-```example file=".env.local.example"
+\`\`\`example file=".env.local.example"
 # ===========================================
 # STRIPE CONFIGURATION (REQUIRED)
 # ===========================================
