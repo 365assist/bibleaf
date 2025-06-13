@@ -17,22 +17,18 @@ import {
   NavigationMenuItem,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu"
-import { AuthService } from "@/lib/auth"
 
 export function StickyNavigation() {
   const pathname = usePathname()
+  const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
-    const user = AuthService.getCurrentUser()
-    setIsLoggedIn(!!user)
 
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10)
@@ -47,6 +43,7 @@ export function StickyNavigation() {
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
       setSearchQuery("")
+      setIsSearchOpen(false)
     }
   }
 
@@ -64,13 +61,13 @@ export function StickyNavigation() {
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full border-b border-warm-200 transition-all duration-300 ${
+      className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${
         isScrolled
           ? "bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 shadow-sm"
           : "bg-white/90 backdrop-blur-sm"
       }`}
     >
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Sheet>
             <SheetTrigger asChild>
@@ -85,8 +82,8 @@ export function StickyNavigation() {
                   <Link
                     key={route.href}
                     href={route.href}
-                    className={`text-lg font-medium transition-colors hover:text-warm-600 ${
-                      isActive(route.href) ? "text-warm-600" : "text-foreground"
+                    className={`text-lg font-medium transition-colors hover:text-blue-600 ${
+                      isActive(route.href) ? "text-blue-600" : "text-foreground"
                     }`}
                   >
                     {route.label}
@@ -95,8 +92,12 @@ export function StickyNavigation() {
               </nav>
             </SheetContent>
           </Sheet>
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold text-xl">BibleAF</span>
+
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-blue-700 font-bold text-xl">Bible</span>
+            <span className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-2 py-1 rounded-lg shadow-md font-bold">
+              AF
+            </span>
           </Link>
         </div>
 
@@ -104,7 +105,10 @@ export function StickyNavigation() {
           <NavigationMenuList>
             {routes.map((route) => (
               <NavigationMenuItem key={route.href}>
-                <NavigationMenuLink href={route.href} className={isActive(route.href) ? "text-warm-600 bg-accent" : ""}>
+                <NavigationMenuLink
+                  href={route.href}
+                  className={isActive(route.href) ? "text-blue-600 bg-blue-50" : ""}
+                >
                   {route.label}
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -114,27 +118,21 @@ export function StickyNavigation() {
 
         <div className="flex items-center gap-2">
           {isSearchOpen ? (
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <Input
                 type="search"
-                placeholder="Search..."
+                placeholder="Search Bible verses..."
                 className="w-[200px] pr-8"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
                 onBlur={() => setIsSearchOpen(false)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearch(e)
-                    setIsSearchOpen(false)
-                  }
-                }}
               />
               <X
                 className="absolute right-2 top-2.5 h-4 w-4 cursor-pointer opacity-70"
                 onClick={() => setIsSearchOpen(false)}
               />
-            </div>
+            </form>
           ) : (
             <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)}>
               <Search className="h-5 w-5" />
@@ -142,44 +140,30 @@ export function StickyNavigation() {
             </Button>
           )}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Toggle theme"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-
-          {isLoggedIn ? (
-            <>
-              <Link href="/dashboard">
-                <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-                  Dashboard
-                </Button>
-              </Link>
-              <Link href="/saved-verses">
-                <Button size="sm" className="hidden sm:inline-flex bg-warm-600 hover:bg-warm-700">
-                  Saved
-                </Button>
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link href="/auth/login">
-                <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button size="sm" className="hidden sm:inline-flex bg-warm-600 hover:bg-warm-700">
-                  Sign Up
-                </Button>
-              </Link>
-            </>
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Toggle theme"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
+            </Button>
           )}
+
+          <Link href="/auth/login">
+            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+              Sign In
+            </Button>
+          </Link>
+
+          <Link href="/auth/signup">
+            <Button size="sm" className="hidden sm:inline-flex bg-blue-600 hover:bg-blue-700">
+              Sign Up
+            </Button>
+          </Link>
         </div>
       </div>
     </header>

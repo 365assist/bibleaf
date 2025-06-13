@@ -2,8 +2,7 @@ import * as React from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
-interface NavigationMenuProps {
-  className?: string
+interface NavigationMenuProps extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode
 }
 
@@ -36,21 +35,19 @@ const NavigationMenuItem = React.forwardRef<HTMLLIElement, React.HTMLAttributes<
 )
 NavigationMenuItem.displayName = "NavigationMenuItem"
 
-const navigationMenuTriggerStyle = cn(
-  "group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50",
-)
+const navigationMenuTriggerStyle =
+  "group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
 
-interface NavigationMenuLinkProps extends React.ComponentPropsWithoutRef<typeof Link> {
-  asChild?: boolean
+interface NavigationMenuLinkProps {
+  href: string
+  className?: string
+  children: React.ReactNode
 }
 
 const NavigationMenuLink = React.forwardRef<HTMLAnchorElement, NavigationMenuLinkProps>(
-  ({ className, asChild, children, ...props }, ref) => {
-    if (asChild) {
-      return <>{children}</>
-    }
+  ({ className, children, href, ...props }, ref) => {
     return (
-      <Link ref={ref} className={cn(navigationMenuTriggerStyle, className)} {...props}>
+      <Link ref={ref} href={href} className={cn(navigationMenuTriggerStyle, className)} {...props}>
         {children}
       </Link>
     )
