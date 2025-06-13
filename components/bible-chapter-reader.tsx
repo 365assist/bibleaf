@@ -46,7 +46,11 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.translations) {
-          setAvailableTranslations(data.translations)
+          // Ensure we only have string values
+          const translations = data.translations.filter(
+            (t: any): t is string => typeof t === "string" && t.trim() !== "",
+          )
+          setAvailableTranslations(translations)
         }
       }
     } catch (error) {
@@ -231,7 +235,7 @@ export default function BibleChapterReader({ book, chapter, highlightVerse, onSa
           >
             {availableTranslations.map((trans) => (
               <option key={trans} value={trans}>
-                {trans.toUpperCase()}
+                {typeof trans === "string" ? trans.toUpperCase() : String(trans)}
               </option>
             ))}
           </select>
